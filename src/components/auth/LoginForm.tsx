@@ -1,87 +1,106 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { createClient } from '@/lib/supabase/client';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export function LoginForm() {
   const router   = useRouter();
   const supabase = createClient();
 
-  // Escuchar el evento de login exitoso y redirigir según rol
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event !== 'SIGNED_IN' || !session) return;
+  const [email,    setEmail]    = useState('');
+  const [password, setPassword] = useState('');
+  const [showPw,   setShowPw]   = useState(false);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState<string | null>(null);
 
-        // Consultar el rol del usuario recién autenticado
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-        const role = profile?.role ?? 'student';
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-        // Redirigir según rol
-        if (role === 'admin') {
-          router.push('/dashboard');
-        } else {
-          router.push('/dashboard/monitor');
-        }
+    if (authError || !data.user) {
+      setError('Correo o contraseña incorrectos.');
+      setLoading(false);
+      return;
+    }
 
-        router.refresh();
-      },
-    );
+    // Consultar rol y redirigir
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
 
-    return () => subscription.unsubscribe();
-  }, [supabase, router]);
+    const role = profile?.role ?? 'student';
+    router.push(role === 'admin' ? '/dashboard' : '/dashboard/monitor');
+    router.refresh();
+  }
 
   return (
-    <Auth
-      supabaseClient={supabase}
-      appearance={{
-        theme: ThemeSupa,
-        variables: {
-          default: {
-            colors: {
-              brand:       '#4f46e5', // indigo-600
-              brandAccent: '#4338ca', // indigo-700
-            },
-            borderWidths: {
-              buttonBorderWidth: '1px',
-              inputBorderWidth:  '1px',
-            },
-            radii: {
-              borderRadiusButton: '0.5rem',
-              inputBorderRadius:  '0.5rem',
-            },
-          },
-        },
-        className: {
-          container: 'space-y-4',
-          label:     'text-sm font-medium text-gray-700 dark:text-gray-300',
-          input:     'text-sm',
-          button:    'text-sm font-medium',
-        },
-      }}
-      providers={[]}        // Sin OAuth por ahora; agrega 'google' si lo necesitas
-      view="sign_in"        // Solo mostrar login, no registro público
-      showLinks={false}     // Ocultar "¿No tienes cuenta?" — los usuarios los crea el admin
-      localization={{
-        variables: {
-          sign_in: {
-            email_label:       'Correo electrónico',
-            password_label:    'Contraseña',
-            button_label:      'Ingresar',
-            loading_button_label: 'Ingresando…',
-            email_input_placeholder:    'tu@correo.com',
-            password_input_placeholder: '••••••••',
-          },
-        },
-      }}
-    />
+    <form onSubmit={handleSubmit} className="space-y-4">
+
+      <div className="space-y-1.5">
+        <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Correo electrónico
+        </label>
+        <input
+          id="login-email"
+          type="email"
+          required
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="tu@correo.com"
+          className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Contraseña
+        </label>
+        <div className="relative">
+          <input
+            id="login-password"
+            type={showPw ? 'text' : 'password'}
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 pr-10 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPw((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            aria-label={showPw ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          >
+            {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+      )}
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium text-sm px-4 py-2.5 transition-colors"
+      >
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+        {loading ? 'Ingresando…' : 'Ingresar'}
+      </button>
+
+    </form>
   );
 }
