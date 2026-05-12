@@ -24,9 +24,8 @@ export function FatigueAlert({ log }: FatigueAlertProps) {
           Fatiga crítica detectada
         </p>
         <p className="text-xs text-red-600 dark:text-red-400">
-          Dispositivo <code className="font-mono">{log.device_id}</code> · BPM:{' '}
-          <strong>{log.blinks_per_minute}</strong> · EAR promedio:{' '}
-          <strong>{log.ear_average}</strong>
+          Alumno <code className="font-mono">{log.device_id}</code> · BPM:{' '}
+          <strong>{log.blinks_per_minute}</strong>
         </p>
         <p className="text-xs text-red-500 dark:text-red-500">
           {new Date(log.created_at).toLocaleString('es-CL')}

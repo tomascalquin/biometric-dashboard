@@ -7,7 +7,7 @@ export interface TelemetryLog {
   session_id: string;
   ear_left: number;
   ear_right: number;
-  ear_average: number;
+  career_id: string;
   blinks_per_minute: number;
   blink_count: number;
   fatigue_level: FatigueLevel;

@@ -1,7 +1,8 @@
 import { cn, fatigueColors } from '@/lib/utils';
 import type { TelemetryLog } from '@/types/telemetry';
 
-const HEADERS = ['Tiempo', 'Dispositivo', 'BPM', 'EAR avg', 'Fatiga', 'Luz azul'];
+// Actualizamos las cabeceras para que coincidan con los datos reales
+const HEADERS = ['Tiempo', 'ID Alumno', 'Carrera', 'BPM', 'Fatiga', 'Luz azul'];
 
 interface TelemetryTableProps {
   logs: TelemetryLog[];
@@ -36,11 +37,11 @@ export function TelemetryTable({ logs }: TelemetryTableProps) {
                 <td className="px-4 py-3 font-mono text-xs text-gray-600 dark:text-gray-400">
                   {log.device_id}
                 </td>
+                <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">
+                  {log.career_id}
+                </td>
                 <td className="px-4 py-3 font-semibold tabular-nums">
                   {log.blinks_per_minute}
-                </td>
-                <td className="px-4 py-3 tabular-nums text-gray-600 dark:text-gray-400">
-                  {log.ear_average}
                 </td>
                 <td className="px-4 py-3">
                   <span

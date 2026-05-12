@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -10,22 +10,68 @@ import {
   Menu,
   X,
   Eye,
+  ScanEye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
 
 const NAV_ITEMS = [
-  { href: '/dashboard',          label: 'Panel',        icon: LayoutDashboard },
-  { href: '/dashboard/sessions', label: 'Sesiones',     icon: Activity },
-  { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
+  {
+    href:  '/dashboard',
+    label: 'Panel Admin',
+    icon:  LayoutDashboard,
+    roles: ['admin'] as string[],
+  },
+  {
+    href:  '/dashboard/monitor',
+    label: 'Monitor Biométrico',
+    icon:  ScanEye,
+    roles: ['student'] as string[],
+  },
+  {
+    href:  '/dashboard/sessions',
+    label: 'Sesiones',
+    icon:  Activity,
+    roles: [] as string[],
+  },
+  {
+    href:  '/dashboard/settings',
+    label: 'Configuración',
+    icon:  Settings,
+    roles: [] as string[],
+  },
 ] as const;
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const pathname = usePathname();
+  const [role, setRole]           = useState<string | null>(null);
+  const pathname                  = usePathname();
+  const supabase                  = createClient();
+
+  useEffect(() => {
+    async function loadRole() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      setRole(profile?.role ?? 'student');
+    }
+    void loadRole();
+  }, [supabase]);
+
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (item.roles.length === 0) return true;
+    if (role === null) return false;
+    return item.roles.includes(role);
+  });
 
   return (
     <>
-      {/* Mobile overlay */}
       {!collapsed && (
         <div
           className="fixed inset-0 z-20 bg-black/40 lg:hidden"
@@ -40,7 +86,6 @@ export function Sidebar() {
           'border-r border-gray-200 dark:border-gray-800',
           'transition-all duration-200 ease-in-out',
           collapsed ? 'w-16' : 'w-60',
-          // En mobile, ocultar si collapsed
           'lg:relative lg:translate-x-0',
           collapsed && '-translate-x-full lg:translate-x-0',
         )}
@@ -60,17 +105,29 @@ export function Sidebar() {
             className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
           >
-            {collapsed ? (
-              <Menu className="h-4 w-4" />
-            ) : (
-              <X className="h-4 w-4" />
-            )}
+            {collapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
           </button>
         </div>
 
+        {/* Badge de rol */}
+        {!collapsed && role && (
+          <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+            <span
+              className={cn(
+                'inline-block text-xs font-medium px-2 py-0.5 rounded-full',
+                role === 'admin'
+                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+              )}
+            >
+              {role === 'admin' ? '🛡 Administrador' : '🎓 Estudiante'}
+            </span>
+          </div>
+        )}
+
         {/* Navigation */}
         <nav className="flex-1 px-2 py-3 space-y-0.5" aria-label="Navegación principal">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          {visibleItems.map(({ href, label, icon: Icon }) => {
             const active = pathname === href;
             return (
               <Link
@@ -99,7 +156,6 @@ export function Sidebar() {
         )}
       </aside>
 
-      {/* Mobile hamburger (TopBar) */}
       <button
         className="fixed bottom-4 right-4 z-50 lg:hidden rounded-full bg-indigo-600 p-3 text-white shadow-lg"
         onClick={() => setCollapsed((c) => !c)}
