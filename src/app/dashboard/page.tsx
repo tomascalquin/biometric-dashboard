@@ -36,20 +36,8 @@ async function fetchSummary(): Promise<TelemetrySummary> {
   };
 }
 
-export default async function AdminDashboardPage() {
+async function AdminDashboardView() {
   const supabase = await createClient();
-
-  // Verificar sesión y rol (segunda capa de seguridad, más allá del middleware)
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  if (profile?.role !== 'admin') redirect('/unauthorized');
 
   const summary = await fetchSummary();
 
@@ -106,3 +94,27 @@ export default async function AdminDashboardPage() {
     </main>
   );
 }
+
+import { StudentDashboard } from '@/components/dashboard/student/StudentDashboard';
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const role = profile?.role ?? 'student';
+
+  if (role === 'admin') {
+    return <AdminDashboardView />;
+  }
+
+  return <StudentDashboard />;
+}
+
