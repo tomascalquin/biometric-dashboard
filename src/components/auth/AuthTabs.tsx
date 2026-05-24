@@ -14,16 +14,16 @@ export function AuthTabs() {
     <div className="space-y-5">
 
       {/* Tabs */}
-      <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-1">
+      <div className="flex rounded-xl bg-[#0f1923] p-1 gap-1">
         {(['login', 'register'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              'flex-1 py-1.5 text-sm font-medium rounded-md transition-colors',
+              'flex-1 py-2 text-sm font-medium rounded-lg transition-all',
               tab === t
-                ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-gray-400 hover:text-gray-200',
             )}
           >
             {t === 'login' ? 'Ingresar' : 'Registrarse'}

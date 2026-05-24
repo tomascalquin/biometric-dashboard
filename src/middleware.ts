@@ -4,12 +4,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 /**
  * BiometricOS — Middleware de autenticación y control de acceso por roles.
  *
- * Rutas protegidas:
- *  /dashboard          → solo 'admin'
- *  /dashboard/monitor  → solo 'student'
- *
- * Si el usuario no está autenticado → /login
- * Si el rol no coincide             → /unauthorized
+ * Rutas públicas: /login, /register/**, /unauthorized, /
+ * Rutas protegidas: /dashboard/** → requieren sesión válida
+ * El role-based routing lo maneja cada page/layout de Next.js.
  */
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -43,8 +40,15 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ─── Rutas públicas: siempre permitir ────────────────────────────────────
-  const publicPaths = ['/login', '/register', '/unauthorized', '/'];
-  if (publicPaths.some((p) => pathname === p || pathname.startsWith('/api/'))) {
+  // Incluye /register y todas sus sub-rutas (invite/token, etc.)
+  const isPublic =
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname === '/unauthorized' ||
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/api/');
+
+  if (isPublic) {
     return supabaseResponse;
   }
 
@@ -56,31 +60,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // ─── Obtener rol del perfil ───────────────────────────────────────────────
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  const role = profile?.role ?? 'student';
-
-  // ─── Control de acceso por ruta ──────────────────────────────────────────
-  const isAdminRoute   = pathname === '/dashboard' || pathname.startsWith('/dashboard/admin');
-  const isStudentRoute = pathname === '/dashboard/monitor';
-
-  if (isAdminRoute && role !== 'admin') {
-    return NextResponse.redirect(new URL('/unauthorized', request.url));
-  }
-
-  if (isStudentRoute && role !== 'student') {
-    // Un admin que accede a /monitor → lo llevamos al panel admin
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  // Inyectar el rol como header para que los Server Components lo lean sin
-  // hacer una segunda consulta a Supabase (opcional pero eficiente)
-  supabaseResponse.headers.set('x-user-role', role);
+  // ─── Usuario autenticado: inyectar headers útiles ─────────────────────────
+  // El role-based access lo maneja cada layout/page de forma granular
   supabaseResponse.headers.set('x-user-id', user.id);
 
   return supabaseResponse;
