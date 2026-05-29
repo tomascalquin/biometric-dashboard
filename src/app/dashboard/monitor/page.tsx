@@ -64,7 +64,23 @@ export default function MonitorPage() {
 
   const supabase = createClient();
 
-  // Timer de sesión
+  // ── career_id real del perfil del usuario ──────────────────────────────────
+  const careerIdRef = useRef<string | null>(null);
+  const dbSessionId = useRef<string | null>(null);   // UUID de study_sessions en DB
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from('profiles')
+        .select('career_id')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => { careerIdRef.current = data?.career_id ?? null; });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!isRunning) return;
     const interval = setInterval(() => setSessionMin(m => m + 1), 60_000);
@@ -82,17 +98,17 @@ export default function MonitorPage() {
     async (earL: number, earR: number, currentBpm: number, level: FatigueLevel, blinkActive: boolean) => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user || !dbSessionId.current) return;
         await supabase.from('telemetry_logs').insert({
           student_anon_id:   user.id,
-          session_id:        sessionId.current,
+          session_id:        dbSessionId.current,
           ear_left:          Math.round(earL * 1000) / 1000,
           ear_right:         Math.round(earR * 1000) / 1000,
           blinks_per_minute: currentBpm,
           blink_count:       blinkCounter.current,
           fatigue_level:     level,
           blue_light_active: blinkActive,
-          career_id:         'unknown',
+          career_id:         careerIdRef.current ?? null,
         });
       } catch (e) {
         console.error('Error de red al enviar telemetría:', e);
@@ -165,6 +181,24 @@ export default function MonitorPage() {
     setError(null);
     setSessionMin(0);
     try {
+      // Crear sesión en DB antes de iniciar la cámara
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: newSession } = await supabase
+          .from('study_sessions')
+          .insert({
+            student_id: user.id,
+            career_id:  careerIdRef.current ?? null,
+            status:     'active',
+          })
+          .select('id')
+          .single();
+        if (newSession) {
+          dbSessionId.current  = newSession.id;
+          sessionId.current    = newSession.id; // sincronizar el ref legacy
+        }
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: 'user' },
       });
@@ -213,6 +247,14 @@ export default function MonitorPage() {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+
+    // Cerrar sesión en DB y calcular métricas agregadas
+    if (dbSessionId.current) {
+      supabase.rpc('close_study_session', { p_session_id: dbSessionId.current })
+        .then(({ error }) => { if (error) console.error('Error al cerrar sesión:', error); });
+      dbSessionId.current = null;
+    }
+
     setIsRunning(false);
     setEarLeft(0);
     setEarRight(0);
@@ -220,7 +262,7 @@ export default function MonitorPage() {
     setBlinkCount(0);
     setFatigueLevel('normal');
     setBlueLightActive(false);
-  }, []);
+  }, [supabase]);
 
   const simulateCritical = useCallback(() => {
     setBpm(7);

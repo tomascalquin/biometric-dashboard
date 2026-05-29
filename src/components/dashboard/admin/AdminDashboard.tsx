@@ -1,8 +1,34 @@
 import { ArrowUp, Map, AlertTriangle, FileText, Users } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/server';
 
-export function AdminDashboard() {
+export async function AdminDashboard() {
+  const supabase = await createClient();
+
+  // ── Vista resumen global (últimas 24h) ───────────────────────────────────────
+  const { data: summary } = await supabase
+    .from('v_telemetry_summary')
+    .select('*')
+    .single();
+
+  // ── Vista fatiga por carrera (últimas 24h) ───────────────────────────────────
+  const { data: careerFatigue } = await supabase
+    .from('v_fatigue_by_career')
+    .select('career_name, avg_bpm, critical_students, warning_students, normal_students, total_students')
+    .limit(5);
+
+  const fatigue = careerFatigue ?? [];
+  const totalLogs = Number(summary?.total_logs ?? 0);
+  const avgBpm    = Number(summary?.avg_bpm ?? 0);
+  const critCount = Number(summary?.critical_count ?? 0);
+  const warnCount = Number(summary?.warning_count ?? 0);
+  const atRisk    = critCount + warnCount;
+
+  // Porcentaje de estrés promedio (inverso del BPM: más bajo = más fatiga)
+  // BPM normal ~15, crítico <10. Normalizamos 0-100% donde 0 BPM = 100% estrés
+  const stressPercent = avgBpm > 0 ? Math.max(0, Math.min(100, Math.round((1 - avgBpm / 20) * 100))) : 0;
+
   return (
     <div className="p-4 space-y-5">
       
@@ -12,26 +38,32 @@ export function AdminDashboard() {
         <div className="bg-white dark:bg-[#1a2332] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             <div className="space-y-0.5">
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Estrés promedio UAI</p>
-              <p className="text-3xl font-bold text-red-600 leading-none">68%</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Estrés promedio</p>
+              <p className={`text-3xl font-bold leading-none ${stressPercent > 60 ? 'text-red-600' : stressPercent > 40 ? 'text-orange-500' : 'text-green-500'}`}>
+                {totalLogs > 0 ? `${stressPercent}%` : '—'}
+              </p>
               <p className="text-[10px] text-gray-400 flex items-center gap-0.5 mt-1">
-                <ArrowUp className="w-3 h-3" /> Alto - sobre umbral
+                {totalLogs > 0 ? <><ArrowUp className="w-3 h-3" /> BPM prom: {avgBpm}</> : 'Sin datos aun'}
               </p>
             </div>
             <div className="space-y-0.5">
               <p className="text-[10px] text-gray-500 dark:text-gray-400">Alumnos en riesgo</p>
-              <p className="text-3xl font-bold text-orange-500 leading-none">142</p>
-              <p className="text-[10px] text-gray-400 mt-1">de 3.840 activos</p>
+              <p className={`text-3xl font-bold leading-none ${atRisk > 0 ? 'text-orange-500' : 'text-green-500'}`}>
+                {atRisk}
+              </p>
+              <p className="text-[10px] text-gray-400 mt-1">registros críticos + warning</p>
             </div>
             <div className="space-y-0.5 pt-1 border-t border-gray-100 dark:border-gray-800">
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Salas críticas</p>
-              <p className="text-3xl font-bold text-gray-800 dark:text-gray-100 leading-none">6</p>
-              <p className="text-[10px] text-gray-400 mt-1">BPM promedio &lt; 9</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Registros críticos</p>
+              <p className={`text-3xl font-bold leading-none ${critCount > 0 ? 'text-red-600' : 'text-gray-800 dark:text-gray-100'}`}>
+                {critCount}
+              </p>
+              <p className="text-[10px] text-gray-400 mt-1">BPM {'<'} umbral crítico</p>
             </div>
             <div className="space-y-0.5 pt-1 border-t border-gray-100 dark:border-gray-800">
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Alertas enviadas</p>
-              <p className="text-3xl font-bold text-blue-500 leading-none">24</p>
-              <p className="text-[10px] text-gray-400 mt-1">al equipo de salud</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Total logs 24h</p>
+              <p className="text-3xl font-bold text-blue-500 leading-none">{totalLogs}</p>
+              <p className="text-[10px] text-gray-400 mt-1">registros de telemetría</p>
             </div>
           </div>
         </div>
@@ -41,10 +73,27 @@ export function AdminDashboard() {
       <section>
         <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-3 tracking-widest ml-1 uppercase">Carrera — Nivel de Fatiga</h2>
         <div className="bg-white dark:bg-[#1a2332] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 space-y-4">
-          <CareerProgress name="Ing. Civil Informática" value={82} bpm="8 - 9" level="critical" />
-          <CareerProgress name="Ing. Comercial" value={61} bpm="11" level="warning" />
-          <CareerProgress name="Derecho" value={55} bpm="13" level="warning" />
-          <CareerProgress name="Psicología" value={34} bpm="14" level="normal" />
+          {fatigue.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-3">Sin datos de telemetría aún</p>
+          ) : (
+            fatigue.map((c) => {
+              const total = Number(c.total_students) || 1;
+              const critPct = Math.round((Number(c.critical_students) / total) * 100);
+              const bpmStr  = c.avg_bpm != null ? String(c.avg_bpm) : '—';
+              const level: 'critical' | 'warning' | 'normal' =
+                Number(c.critical_students) > 0 ? 'critical' :
+                Number(c.warning_students)  > 0 ? 'warning'  : 'normal';
+              return (
+                <CareerProgress
+                  key={c.career_name}
+                  name={c.career_name}
+                  value={critPct || Math.round((Number(c.warning_students) / total) * 100)}
+                  bpm={bpmStr}
+                  level={level}
+                />
+              );
+            })
+          )}
         </div>
       </section>
 

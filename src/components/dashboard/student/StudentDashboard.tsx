@@ -1,8 +1,45 @@
 import { Lightbulb, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import type { FatigueLevel } from '@/types/telemetry';
 
-export function StudentDashboard() {
+interface StudentDashboardProps {
+  careerName:     string | null;
+  avgBpm:         number | null;
+  alertsToday:    number;
+  dominantLevel:  FatigueLevel | null;
+  sessionMin:     number | null;
+  sessionSubject: string | null;
+}
+
+export function StudentDashboard({
+  careerName,
+  avgBpm,
+  alertsToday,
+  dominantLevel,
+  sessionMin,
+  sessionSubject,
+}: StudentDashboardProps) {
+
+  // Labels de estado basados en nivel dominante de fatiga
+  const levelLabel: Record<FatigueLevel, string> = {
+    normal:   'Normal',
+    warning:  '▲ Moderado',
+    critical: '▲ Alto',
+  };
+  const levelColor: Record<FatigueLevel, string> = {
+    normal:   'text-green-500',
+    warning:  'text-orange-500',
+    critical: 'text-red-600',
+  };
+  const levelDot: Record<FatigueLevel, string> = {
+    normal:   'bg-green-500',
+    warning:  'bg-orange-500',
+    critical: 'bg-red-600',
+  };
+
+  const currentLevel = dominantLevel ?? 'normal';
+
   return (
     <div className="p-4 space-y-5">
       
@@ -12,51 +49,64 @@ export function StudentDashboard() {
         <div className="grid grid-cols-2 gap-3">
           <StatusCard 
             title="BPM actual" 
-            value="16" 
-            unit="bpm" 
-            status="Normal" 
-            statusColor="text-green-500"
-            dotClass="bg-green-500"
+            value={avgBpm !== null ? String(avgBpm) : '—'} 
+            unit={avgBpm !== null ? 'bpm' : undefined}
+            status={avgBpm !== null ? levelLabel[currentLevel] : 'Sin datos'}
+            statusColor={avgBpm !== null ? levelColor[currentLevel] : 'text-gray-400'}
+            dotClass={avgBpm !== null ? levelDot[currentLevel] : undefined}
           />
           <StatusCard 
             title="Estrés hoy" 
-            value="47%" 
-            status="▲ Moderado" 
-            statusColor="text-orange-500"
-            dotClass="bg-orange-500"
+            value={dominantLevel ? levelLabel[dominantLevel].replace('▲ ', '') : '—'}
+            status={dominantLevel ? levelLabel[dominantLevel] : 'Sin datos'}
+            statusColor={dominantLevel ? levelColor[dominantLevel] : 'text-gray-400'}
+            dotClass={dominantLevel ? levelDot[dominantLevel] : undefined}
           />
           <StatusCard 
             title="Sesión activa" 
-            value="45 min" 
-            subtitle="Proyecto Inf." 
+            value={sessionMin !== null ? `${sessionMin} min` : '—'}
+            subtitle={sessionSubject ?? (sessionMin !== null ? 'Sesión en curso' : 'Sin sesión')}
           />
           <StatusCard 
             title="Alertas hoy" 
-            value="2" 
-            subtitle="Ver historial" 
-            subtitleColor="text-blue-500"
-            link="/dashboard/history"
+            value={String(alertsToday)}
+            subtitle={alertsToday > 0 ? 'Ver historial' : 'Sin alertas'}
+            subtitleColor={alertsToday > 0 ? 'text-blue-500' : 'text-gray-400'}
+            link={alertsToday > 0 ? '/dashboard/history' : undefined}
           />
         </div>
       </section>
 
-      {/* MIS MATERIAS */}
+      {/* MIS MATERIAS — placeholder informativo si no hay sesiones */}
       <section className="bg-white dark:bg-[#1a2332] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
         <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-4 tracking-widest uppercase">Mis Materias — Semana</h2>
-        <div className="space-y-4">
-          <SubjectRow name="Proyecto Informática" status="Normal" bpm="14" value={28} level="normal" />
-          <SubjectRow name="Cálculo III" status="Warning" bpm="11" value={62} level="warning" />
-          <SubjectRow name="Redes y Sistemas" status="Crítico" bpm="8" value={92} level="critical" />
-        </div>
+        {avgBpm !== null ? (
+          <div className="space-y-4">
+            <SubjectRow name={sessionSubject ?? 'Sesión sin nombre'} status={levelLabel[currentLevel]} bpm={String(avgBpm)} value={Math.min(100, avgBpm * 5)} level={currentLevel} />
+            <p className="text-[10px] text-gray-400 text-center pt-1">Inicia más sesiones para ver el desglose por materia</p>
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <p className="text-sm text-gray-400">Sin sesiones registradas hoy</p>
+            <p className="text-[10px] text-gray-500 mt-1">Usa el monitor para comenzar a medir</p>
+            <Link href="/dashboard/monitor" className="inline-flex items-center gap-1 mt-3 text-xs text-blue-500 font-medium hover:underline">
+              Ir al monitor →
+            </Link>
+          </div>
+        )}
       </section>
 
-      {/* RECOMENDACIÓN UAI */}
+      {/* RECOMENDACIÓN */}
       <section className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 rounded-2xl p-4 flex gap-3">
         <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
         <div>
-          <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-1">Recomendación UAI</h3>
+          <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-1">Recomendación</h3>
           <p className="text-[11px] text-blue-800 dark:text-blue-400 leading-relaxed">
-            Tu nivel de fatiga en Redes y Sistemas es alto. Considera tomar un descanso de 10 min antes de continuar.
+            {currentLevel === 'critical'
+              ? 'Tu nivel de fatiga es alto. Toma un descanso de 10 minutos antes de continuar.'
+              : currentLevel === 'warning'
+              ? 'Fatiga moderada detectada. Considera una pausa breve de 5 minutos.'
+              : 'Tu estado biométrico es óptimo. ¡Sigue así!'}
           </p>
         </div>
       </section>
@@ -65,7 +115,7 @@ export function StudentDashboard() {
       <section className="bg-white dark:bg-[#1a2332] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
         <div className="flex justify-between items-center mb-3">
           <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-widest uppercase">Ranking Carrera</h2>
-          <span className="text-[10px] text-gray-400">ICI · Peñalolén</span>
+          <span className="text-[10px] text-gray-400">{careerName ?? 'Tu carrera'}</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
@@ -73,8 +123,8 @@ export function StudentDashboard() {
           </div>
           <div>
             <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">Tu percentil de bienestar</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">Top 38%</p>
-            <p className="text-[10px] text-gray-400 mt-1">vs promedio ICI (estrés 52%)</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none">—</p>
+            <p className="text-[10px] text-gray-400 mt-1">Datos disponibles con más sesiones</p>
           </div>
         </div>
       </section>
