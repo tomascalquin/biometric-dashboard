@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils';
 
 type Tab = 'login' | 'register';
 
-export function AuthTabs() {
-  const [tab, setTab] = useState<Tab>('login');
+export function AuthTabs({ defaultTab = 'login' }: { defaultTab?: Tab }) {
+  const [tab, setTab] = useState<Tab>(defaultTab);
 
   return (
     <div className="space-y-5">

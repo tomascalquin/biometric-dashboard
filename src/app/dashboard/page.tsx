@@ -11,11 +11,17 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, career_id, careers(name)')
+    .select('role, full_name, career_id, careers(name)')
     .eq('id', user.id)
     .single();
 
   const role = profile?.role ?? 'student';
+
+  // ── Redirect a onboarding si el estudiante no ha completado su perfil ──
+  // Considera onboarding completo si tiene career_id O full_name (texto libre).
+  if (role === 'student' && !profile?.career_id && !profile?.full_name) {
+    redirect('/dashboard/onboarding');
+  }
 
   if (role === 'admin') {
     return <AdminDashboard />;

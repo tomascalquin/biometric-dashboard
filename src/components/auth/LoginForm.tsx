@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export function LoginForm() {
-  const router   = useRouter();
   const supabase = createClient();
 
   const [email,    setEmail]    = useState('');
@@ -31,9 +29,9 @@ export function LoginForm() {
       return;
     }
 
-    // Consultar rol y redirigir al dashboard (page.tsx maneja admin vs student)
-    router.push('/dashboard');
-    router.refresh();
+    // Hard navigation: fuerza al Server Component a releer la sesión desde cookies.
+    // router.push() no invalida el cache del servidor en Next.js App Router.
+    window.location.href = '/dashboard';
   }
 
   return (

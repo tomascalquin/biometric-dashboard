@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react';
 
 export function RegisterForm() {
-  const router   = useRouter();
   const supabase = createClient();
 
   const [fullName, setFullName] = useState('');
@@ -52,9 +50,8 @@ export function RegisterForm() {
       return;
     }
 
-    // Sin confirmación → redirigir directo al dashboard
-    router.push('/dashboard');
-    router.refresh();
+    // Sin confirmación de email → redirigir al dashboard con hard navigation
+    window.location.href = '/dashboard';
   }
 
   // Estado: email enviado

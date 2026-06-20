@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
 import { BottomNavBar } from '@/components/layout/BottomNavBar';
 import { MobileTopBar } from '@/components/layout/MobileTopBar';
 
@@ -17,13 +16,15 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
-  // Query perfil con join a carrera y facultad
+  // Query perfil con join a carrera, facultad y universidad
   const { data: profile } = await supabase
     .from('profiles')
     .select(`
       role,
       full_name,
       university,
+      campus,
+      academic_year,
       career_id,
       careers (
         name,
@@ -36,26 +37,22 @@ export default async function DashboardLayout({
   const role = profile?.role ?? 'student';
   const name = profile?.full_name ?? user.email?.split('@')[0] ?? 'Usuario';
 
-  // ── Redirect a onboarding si el estudiante aún no tiene carrera ──
-  // Evitamos loop: si ya estamos en /dashboard/onboarding no redirigimos
-  const headersList = await headers();
-  const pathname = headersList.get('x-invoke-path') ?? headersList.get('next-url') ?? '';
-  const isOnboarding = pathname.includes('/dashboard/onboarding');
+  // ── El redirect a /dashboard/onboarding se hace en dashboard/page.tsx ──
+  // (no desde aquí, para evitar loops con el header x-pathname)
 
-  if (role === 'student' && !profile?.career_id && !isOnboarding) {
-    redirect('/dashboard/onboarding');
-  }
 
   // ── Subtitle dinámico ──
   let subtitle: string;
   if (role === 'admin') {
-    subtitle = 'Director Académico · UAI Peñalolén';
+    subtitle = 'Administrador';
   } else {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const careerData = (profile?.careers as any);
-    const careerName   = careerData?.name ?? 'Sin carrera';
+    const careerData     = (profile?.careers as any);
+    const careerName     = careerData?.name ?? 'Sin carrera';
     const universityName = profile?.university ?? 'Universidad';
-    subtitle = `${careerName} · ${universityName}`;
+    const campusStr      = (profile as any)?.campus ? ` · ${(profile as any).campus}` : '';
+    const yearStr        = (profile as any)?.academic_year ? ` · ${(profile as any).academic_year}° año` : '';
+    subtitle = `${careerName} · ${universityName}${campusStr}${yearStr}`;
   }
 
   // Badge de carrera solo para estudiantes

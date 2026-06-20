@@ -29,6 +29,30 @@ export async function AdminDashboard() {
   // BPM normal ~15, crítico <10. Normalizamos 0-100% donde 0 BPM = 100% estrés
   const stressPercent = avgBpm > 0 ? Math.max(0, Math.min(100, Math.round((1 - avgBpm / 20) * 100))) : 0;
 
+  // ── Telemetría real por hora (últimas 24h) ───────────────────────────────────
+  const since24h = new Date(Date.now() - 24 * 3_600_000).toISOString();
+  const { data: rawHourly } = await supabase
+    .from('telemetry_logs')
+    .select('created_at, fatigue_level')
+    .gte('created_at', since24h);
+
+  const hourBuckets = new Array(24).fill(0).map(() => ({ total: 0, critical: 0 }));
+  (rawHourly ?? []).forEach((t) => {
+    const h = new Date(t.created_at).getHours();
+    hourBuckets[h].total += 1;
+    if (t.fatigue_level === 'critical') hourBuckets[h].critical += 1;
+  });
+  const activeHours = hourBuckets
+    .map((b, h) => ({ h, ...b }))
+    .filter((b) => b.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8)
+    .sort((a, b) => a.h - b.h);
+  const maxTotal = Math.max(...activeHours.map((b) => b.total), 1);
+  const peakHour = activeHours.length > 0
+    ? activeHours.reduce((best, cur) => cur.total > best.total ? cur : best, activeHours[0])
+    : null;
+
   return (
     <div className="p-4 space-y-5">
       

@@ -24,3 +24,58 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ── Onboarding form helpers ── */
+.input-field {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: #0f1923;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: white;
+  outline: none;
+  transition: box-shadow 0.15s;
+}
+.input-field:focus {
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+.input-field::placeholder {
+  color: #4b5563;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  background: #2563eb;
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.875rem 1rem;
+  transition: background 0.15s, transform 0.1s;
+  border: none;
+  cursor: pointer;
+}
+.btn-primary:hover  { background: #1d4ed8; }
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #9ca3af;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.875rem 1rem;
+  transition: background 0.15s, transform 0.1s;
+  background: transparent;
+  cursor: pointer;
+}
+.btn-secondary:hover  { background: rgba(255,255,255,0.05); }
+.btn-secondary:active { transform: scale(0.98); }

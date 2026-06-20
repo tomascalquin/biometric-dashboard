@@ -1,15 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Esta regla intercepta a quien entre a localhost:3000 y lo manda al dashboard
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/dashboard',
-        permanent: true,
-      },
-    ];
+
+  // Turbopack es el bundler por defecto en Next.js 16.
+  // Fijamos la raíz del workspace al directorio del proyecto para evitar
+  // que Turbopack detecte el Escritorio como raíz (por bun.lock externo +
+  // pnpm-workspace.yaml), lo que causaba "Can't resolve 'tailwindcss'".
+  turbopack: {
+    root: process.cwd(),
   },
 };
 

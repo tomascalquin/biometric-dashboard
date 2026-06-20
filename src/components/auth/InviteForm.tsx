@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
 
@@ -12,7 +11,6 @@ interface Props {
 type TokenStatus = 'checking' | 'valid' | 'invalid' | 'used';
 
 export function InviteForm({ token }: Props) {
-  const router   = useRouter();
   const supabase = createClient();
 
   const [tokenStatus, setTokenStatus] = useState<TokenStatus>('checking');
@@ -99,8 +97,8 @@ export function InviteForm({ token }: Props) {
       .update({ role: 'admin', full_name: fullName })
       .eq('id', data.user.id);
 
-    router.push('/dashboard');
-    router.refresh();
+    // Hard navigation para que el Server Component lea el nuevo rol desde la sesión
+    window.location.href = '/dashboard';
   }
 
   // ─── Estados del token ─────────────────────────────────────────────────────
