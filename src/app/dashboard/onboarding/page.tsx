@@ -13,14 +13,14 @@ export default async function OnboardingPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Si ya completó el onboarding (tiene carrera) → ir al dashboard
+  // Si ya completó el onboarding (tiene carrera o universidad) → ir al dashboard
   const { data: profile } = await supabase
     .from('profiles')
-    .select('career_id, full_name')
+    .select('career_id, university, full_name')
     .eq('id', user.id)
     .single();
 
-  if (profile?.career_id) {
+  if (profile?.career_id || profile?.university) {
     redirect('/dashboard');
   }
 
