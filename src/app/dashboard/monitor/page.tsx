@@ -62,7 +62,7 @@ export default function MonitorPage() {
   const [error,           setError]           = useState<string | null>(null);
   const [sessionMin,      setSessionMin]      = useState(0);
   const [demoRunning,     setDemoRunning]     = useState(false);
-  const [demoCountdown,   setDemoCountdown]   = useState(15);
+  const [demoCountdown,   setDemoCountdown]   = useState(30);
   const [demoResult,      setDemoResult]      = useState<null | { bpm: number; level: FatigueLevel; ear: number; blinks: number }>(null);
   const demoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -276,58 +276,97 @@ export default function MonitorPage() {
     setEarRight(0.19);
   }, []);
 
-  // ── Demo mode: activa cámara + 15 segundos animados ──────────────────────
+  // ── Demo mode: activa cámara + 30 segundos con interpolación suave y ruido realista ──
   const startDemo = useCallback(async () => {
     setDemoResult(null);
-    setDemoCountdown(15);
-    // Primero prender la cámara real
+    setDemoCountdown(30);
     await startMonitor();
     setDemoRunning(true);
     setBlueLightActive(false);
 
     // Contador regresivo
-    let remaining = 15;
+    let remaining = 30;
     const countInterval = setInterval(() => {
       remaining -= 1;
       setDemoCountdown(remaining);
       if (remaining <= 0) clearInterval(countInterval);
     }, 1000);
 
-    // Secuencia: normal (0-4s) → warning (4-8s) → critical (8-11s) → recovery (11-15s)
-    const steps: Array<{ t: number; earL: number; earR: number; bpm: number; level: FatigueLevel; blue: boolean }> = [
-      { t: 0,    earL: 0.32, earR: 0.31, bpm: 18, level: 'normal',   blue: false },
-      { t: 1500, earL: 0.30, earR: 0.29, bpm: 17, level: 'normal',   blue: false },
-      { t: 3000, earL: 0.27, earR: 0.26, bpm: 14, level: 'normal',   blue: false },
-      { t: 4500, earL: 0.24, earR: 0.23, bpm: 12, level: 'warning',  blue: false },
-      { t: 6000, earL: 0.22, earR: 0.21, bpm: 11, level: 'warning',  blue: false },
-      { t: 7500, earL: 0.19, earR: 0.18, bpm:  8, level: 'critical', blue: true  },
-      { t: 9000, earL: 0.17, earR: 0.16, bpm:  6, level: 'critical', blue: true  },
-      { t: 10500,earL: 0.16, earR: 0.15, bpm:  5, level: 'critical', blue: true  },
-      { t: 12000,earL: 0.25, earR: 0.24, bpm: 13, level: 'warning',  blue: false },
-      { t: 13500,earL: 0.30, earR: 0.29, bpm: 16, level: 'normal',   blue: false },
+    // Keyframes principales: normal → warning → critical → recovery
+    const keyframes = [
+      { t: 0,    earL: 0.32, earR: 0.31, bpm: 18, blinks: 0 },
+      { t: 6000, earL: 0.24, earR: 0.23, bpm: 12, blinks: 2 },   // Warning
+      { t: 12000,earL: 0.16, earR: 0.15, bpm:  5, blinks: 8 },   // Critical (pico)
+      { t: 18000,earL: 0.25, earR: 0.24, bpm: 13, blinks: 10 },  // Recovery
+      { t: 30000,earL: 0.30, earR: 0.29, bpm: 16, blinks: 12 },  // Normal
     ];
 
-    let totalBlinks = 0;
-    steps.forEach((s) => {
-      demoTimerRef.current = setTimeout(() => {
-        setEarLeft(s.earL);
-        setEarRight(s.earR);
-        setBpm(s.bpm);
-        setFatigueLevel(s.level);
-        setBlueLightActive(s.blue);
-        setBlinkCount(prev => { totalBlinks = prev + Math.floor(Math.random() * 3 + 1); return totalBlinks; });
-      }, s.t);
-    });
+    // Helper: interpolar entre dos valores
+    const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
-    // Resultado final a los 15s
+    // Helper: encontrar keyframe actual e interpolar
+    const getInterpolated = (time: number) => {
+      for (let i = 0; i < keyframes.length - 1; i++) {
+        const kf1 = keyframes[i];
+        const kf2 = keyframes[i + 1];
+        if (time >= kf1.t && time <= kf2.t) {
+          const duration = kf2.t - kf1.t;
+          const elapsed = time - kf1.t;
+          const ratio = duration > 0 ? elapsed / duration : 0;
+          // Easing: ease-in-out para suavidad
+          const easedRatio = ratio < 0.5 ? 2 * ratio * ratio : -1 + (4 - 2 * ratio) * ratio;
+          return {
+            earL: lerp(kf1.earL, kf2.earL, easedRatio),
+            earR: lerp(kf1.earR, kf2.earR, easedRatio),
+            bpm: lerp(kf1.bpm, kf2.bpm, easedRatio),
+            blinks: lerp(kf1.blinks, kf2.blinks, easedRatio),
+          };
+        }
+      }
+      const lastKf = keyframes[keyframes.length - 1];
+      return { earL: lastKf.earL, earR: lastKf.earR, bpm: lastKf.bpm, blinks: lastKf.blinks };
+    };
+
+    // Actualizar cada ~100ms con pequeñas variaciones realistas
+    const startTime = Date.now();
+    const updateInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed >= 30000) {
+        clearInterval(updateInterval);
+        return;
+      }
+
+      const interpolated = getInterpolated(elapsed);
+      // Agregar pequeño ruido aleatorio para parecer datos reales
+      const noise = {
+        earL: interpolated.earL + (Math.random() - 0.5) * 0.015,
+        earR: interpolated.earR + (Math.random() - 0.5) * 0.015,
+        bpm: Math.round(interpolated.bpm + (Math.random() - 0.5) * 1.5),
+      };
+
+      setEarLeft(Math.max(0.1, Math.min(0.35, noise.earL)));
+      setEarRight(Math.max(0.1, Math.min(0.35, noise.earR)));
+      setBpm(Math.max(0, noise.bpm));
+
+      // Actualizar fatiga basada en BPM interpolado (suave, no saltos)
+      const level = classifyFatigue(interpolated.bpm);
+      setFatigueLevel(level);
+      setBlueLightActive(level === 'critical');
+
+      // Parpadeos aumentan durante estrés crítico
+      setBlinkCount(Math.round(interpolated.blinks));
+    }, 100);
+
+    // Resultado final a los 30s
     demoTimerRef.current = setTimeout(() => {
       clearInterval(countInterval);
+      clearInterval(updateInterval);
       setBlueLightActive(false);
       setDemoRunning(false);
       stopMonitor();
       setDemoResult({ bpm: 11, level: 'warning', ear: 0.22, blinks: 12 });
       setEarLeft(0); setEarRight(0); setBpm(0); setBlinkCount(0); setFatigueLevel('normal');
-    }, 15000);
+    }, 30000);
   }, [startMonitor, stopMonitor]);
 
   const closeDemo = useCallback(() => {
@@ -448,14 +487,14 @@ export default function MonitorPage() {
           </button>
         )}
 
-        {/* Botón demo 15s */}
+        {/* Botón demo 30s */}
         {!demoRunning && !demoResult && (
           <button
             id="btn-demo-session"
             onClick={startDemo}
             className="w-full py-3.5 rounded-2xl border-2 border-violet-500 text-violet-600 dark:text-violet-400 font-semibold text-sm hover:bg-violet-50 dark:hover:bg-violet-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
-            ⚡ Demo sesión (15 seg)
+            ⚡ Demo sesión (30 seg)
           </button>
         )}
         {demoRunning && (
@@ -500,7 +539,7 @@ export default function MonitorPage() {
                 <div className="text-center pr-6">
                   <div className="text-3xl mb-1">📊</div>
                   <h2 className="text-sm font-black text-gray-900 dark:text-white">Resultado de sesión</h2>
-                  <p className="text-[10px] text-gray-400">Duración: 15 seg · Demo</p>
+                  <p className="text-[10px] text-gray-400">Duración: 30 seg · Demo</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
