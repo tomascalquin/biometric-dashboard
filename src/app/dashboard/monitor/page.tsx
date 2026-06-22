@@ -14,7 +14,7 @@ const EAR_THRESHOLD          = 0.25;
 const BLINK_CONSEC_FRAMES    = 3;
 const BPM_CRITICAL_THRESHOLD = 10;
 const BPM_WARNING_THRESHOLD  = 15;
-const LOG_INTERVAL_MS        = 30_000;
+const LOG_INTERVAL_MS        = 10_000;  // Registrar cada 10s para más datos por sesión
 const BPM_WINDOW_MS          = 60_000;
 
 interface Landmark { x: number; y: number; z: number; }
@@ -252,11 +252,19 @@ export default function MonitorPage() {
     streamRef.current = null;
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
 
-    // Cerrar sesión en DB y calcular métricas agregadas
+    // Enviar telemetría final y cerrar sesión en DB
     if (dbSessionId.current) {
-      supabase.rpc('close_study_session', { p_session_id: dbSessionId.current })
-        .then(({ error }) => { if (error) console.error('Error al cerrar sesión:', error); });
-      dbSessionId.current = null;
+      // Primero: enviar el último log de telemetría
+      void sendTelemetry(earLeft, earRight, bpm, fatigueLevel, blueLightActive);
+      
+      // Luego: cerrar sesión después de 500ms (para que se registre el último log)
+      setTimeout(() => {
+        supabase.rpc('close_study_session', { p_session_id: dbSessionId.current })
+          .then(({ error }) => {
+            if (error) console.error('Error al cerrar sesión:', error);
+          });
+        dbSessionId.current = null;
+      }, 500);
     }
 
     setIsRunning(false);
@@ -266,7 +274,7 @@ export default function MonitorPage() {
     setBlinkCount(0);
     setFatigueLevel('normal');
     setBlueLightActive(false);
-  }, [supabase]);
+  }, [supabase, sendTelemetry, earLeft, earRight, bpm, fatigueLevel, blueLightActive]);
 
   const simulateCritical = useCallback(() => {
     setBpm(7);

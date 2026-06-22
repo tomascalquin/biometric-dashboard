@@ -42,7 +42,7 @@ export default async function HistoryPage() {
   // ── Últimas 10 sesiones ───────────────────────────────────────────────────
   const { data: rawSessions } = await supabase
     .from('study_sessions')
-    .select('id, started_at, ended_at, subject_name_override, status')
+    .select('id, started_at, ended_at, subject_name_override, status, avg_bpm, dominant_level')
     .eq('student_id', user.id)
     .order('started_at', { ascending: false })
     .limit(10);
@@ -138,11 +138,9 @@ export default async function HistoryPage() {
         ) : (
           <div className="space-y-0">
             {sessions.map((s, i) => {
-              const meta = telemetryBySession.get(s.id);
-              const level = meta ? dominantLevel(meta.levels) : 'normal';
-              const avgBpm = meta?.bpms.length
-                ? Math.round(meta.bpms.reduce((a, b) => a + b, 0) / meta.bpms.length)
-                : null;
+              // Usar avg_bpm y dominant_level guardados en study_sessions (calculados por close_study_session)
+              const level = (s.dominant_level ?? 'normal') as 'normal' | 'warning' | 'critical';
+              const avgBpm = s.avg_bpm ? Math.round(s.avg_bpm) : null;
               const label = level === 'critical' ? 'Crítico' : level === 'warning' ? 'Warning' : 'Normal';
               return (
                 <div key={s.id}>
