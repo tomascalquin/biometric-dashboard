@@ -50,6 +50,7 @@ export default function MonitorPage() {
   const lastLogTime     = useRef(0);
   const sessionId       = useRef(crypto.randomUUID());
   const animFrameRef    = useRef<number>(0);
+  const currentValuesRef = useRef({ earL: 0, earR: 0, bpm: 0, level: 'normal' as FatigueLevel, blueLight: false });
 
   const [isRunning,       setIsRunning]       = useState(false);
   const [isLoading,       setIsLoading]       = useState(false);
@@ -247,34 +248,61 @@ export default function MonitorPage() {
     }
   }, [onFaceMeshResults]);
 
+  // ── Ref para capturar valores actuales sin cambiar dependencias ────────────
+  useEffect(() => {
+    currentValuesRef.current = { earL: earLeft, earR: earRight, bpm, level: fatigueLevel, blueLight: blueLightActive };
+  }, [earLeft, earRight, bpm, fatigueLevel, blueLightActive]);
+
   const stopMonitor = useCallback(() => {
+    // Detener stream de cámara INMEDIATAMENTE
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    setIsRunning(false);
 
-    // Enviar telemetría final y cerrar sesión en DB
+    // Cerrar sesión en DB de forma asincrónica (sin bloquear cierre de cámara)
     if (dbSessionId.current) {
-      // Primero: enviar el último log de telemetría
-      void sendTelemetry(earLeft, earRight, bpm, fatigueLevel, blueLightActive);
+      const sessionId = dbSessionId.current;
+      dbSessionId.current = null;
       
-      // Luego: cerrar sesión después de 500ms (para que se registre el último log)
-      setTimeout(() => {
-        supabase.rpc('close_study_session', { p_session_id: dbSessionId.current })
-          .then(({ error }) => {
-            if (error) console.error('Error al cerrar sesión:', error);
-          });
-        dbSessionId.current = null;
-      }, 500);
+      // Enviar telemetría final y cerrar sesión
+      void (async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from('telemetry_logs').insert({
+              student_anon_id: user.id,
+              session_id: sessionId,
+              ear_left: Math.max(0.1, Math.min(0.35, currentValuesRef.current.earL)),
+              ear_right: Math.max(0.1, Math.min(0.35, currentValuesRef.current.earR)),
+              blinks_per_minute: Math.max(0, currentValuesRef.current.bpm),
+              blink_count: blinkCounter.current,
+              fatigue_level: currentValuesRef.current.level,
+              blue_light_active: currentValuesRef.current.blueLight,
+              career_id: careerIdRef.current ?? null,
+            });
+          }
+        } catch (e) {
+          console.error('Error al enviar telemetría final:', e);
+        }
+        
+        // Cerrar sesión
+        try {
+          await supabase.rpc('close_study_session', { p_session_id: sessionId });
+        } catch (err) {
+          console.error('Error al cerrar sesión:', err);
+        }
+      })();
     }
 
-    setIsRunning(false);
+    // Limpiar UI
     setEarLeft(0);
     setEarRight(0);
     setBpm(0);
     setBlinkCount(0);
     setFatigueLevel('normal');
     setBlueLightActive(false);
-  }, [supabase, sendTelemetry, earLeft, earRight, bpm, fatigueLevel, blueLightActive]);
+  }, [supabase]);
 
   const simulateCritical = useCallback(() => {
     setBpm(7);
