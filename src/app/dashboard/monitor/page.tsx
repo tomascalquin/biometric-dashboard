@@ -61,6 +61,10 @@ export default function MonitorPage() {
   const [blueLightActive, setBlueLightActive] = useState(false);
   const [error,           setError]           = useState<string | null>(null);
   const [sessionMin,      setSessionMin]      = useState(0);
+  const [demoRunning,     setDemoRunning]     = useState(false);
+  const [demoCountdown,   setDemoCountdown]   = useState(15);
+  const [demoResult,      setDemoResult]      = useState<null | { bpm: number; level: FatigueLevel; ear: number; blinks: number }>(null);
+  const demoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const supabase = createClient();
 
@@ -272,6 +276,65 @@ export default function MonitorPage() {
     setEarRight(0.19);
   }, []);
 
+  // ── Demo mode: activa cámara + 15 segundos animados ──────────────────────
+  const startDemo = useCallback(async () => {
+    setDemoResult(null);
+    setDemoCountdown(15);
+    // Primero prender la cámara real
+    await startMonitor();
+    setDemoRunning(true);
+    setBlueLightActive(false);
+
+    // Contador regresivo
+    let remaining = 15;
+    const countInterval = setInterval(() => {
+      remaining -= 1;
+      setDemoCountdown(remaining);
+      if (remaining <= 0) clearInterval(countInterval);
+    }, 1000);
+
+    // Secuencia: normal (0-4s) → warning (4-8s) → critical (8-11s) → recovery (11-15s)
+    const steps: Array<{ t: number; earL: number; earR: number; bpm: number; level: FatigueLevel; blue: boolean }> = [
+      { t: 0,    earL: 0.32, earR: 0.31, bpm: 18, level: 'normal',   blue: false },
+      { t: 1500, earL: 0.30, earR: 0.29, bpm: 17, level: 'normal',   blue: false },
+      { t: 3000, earL: 0.27, earR: 0.26, bpm: 14, level: 'normal',   blue: false },
+      { t: 4500, earL: 0.24, earR: 0.23, bpm: 12, level: 'warning',  blue: false },
+      { t: 6000, earL: 0.22, earR: 0.21, bpm: 11, level: 'warning',  blue: false },
+      { t: 7500, earL: 0.19, earR: 0.18, bpm:  8, level: 'critical', blue: true  },
+      { t: 9000, earL: 0.17, earR: 0.16, bpm:  6, level: 'critical', blue: true  },
+      { t: 10500,earL: 0.16, earR: 0.15, bpm:  5, level: 'critical', blue: true  },
+      { t: 12000,earL: 0.25, earR: 0.24, bpm: 13, level: 'warning',  blue: false },
+      { t: 13500,earL: 0.30, earR: 0.29, bpm: 16, level: 'normal',   blue: false },
+    ];
+
+    let totalBlinks = 0;
+    steps.forEach((s) => {
+      demoTimerRef.current = setTimeout(() => {
+        setEarLeft(s.earL);
+        setEarRight(s.earR);
+        setBpm(s.bpm);
+        setFatigueLevel(s.level);
+        setBlueLightActive(s.blue);
+        setBlinkCount(prev => { totalBlinks = prev + Math.floor(Math.random() * 3 + 1); return totalBlinks; });
+      }, s.t);
+    });
+
+    // Resultado final a los 15s
+    demoTimerRef.current = setTimeout(() => {
+      clearInterval(countInterval);
+      setBlueLightActive(false);
+      setDemoRunning(false);
+      stopMonitor();
+      setDemoResult({ bpm: 11, level: 'warning', ear: 0.22, blinks: 12 });
+      setEarLeft(0); setEarRight(0); setBpm(0); setBlinkCount(0); setFatigueLevel('normal');
+    }, 15000);
+  }, [startMonitor, stopMonitor]);
+
+  const closeDemo = useCallback(() => {
+    setDemoResult(null);
+    if (demoTimerRef.current) clearTimeout(demoTimerRef.current);
+  }, []);
+
   useEffect(() => () => stopMonitor(), [stopMonitor]);
 
   // ─── Overlay luz azul ───────────────────────────────────────────────────────
@@ -329,7 +392,13 @@ export default function MonitorPage() {
             ref={canvasRef}
             className={`absolute inset-0 w-full h-full ${!isRunning ? 'opacity-0' : ''}`}
           />
-          {/* Badge de estado sobre el video */}
+          {/* Contador regresivo durante demo */}
+          {demoRunning && (
+            <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-sm rounded-2xl px-3 py-2 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+              <span className="text-white text-xs font-bold">Demo · {demoCountdown}s</span>
+            </div>
+          )}
           {isRunning && (
             <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-[10px] font-bold ${fatigueBadge[fatigueLevel].cls}`}>
               {fatigueBadge[fatigueLevel].label}
@@ -379,15 +448,96 @@ export default function MonitorPage() {
           </button>
         )}
 
+        {/* Botón demo 15s */}
+        {!demoRunning && !demoResult && (
+          <button
+            id="btn-demo-session"
+            onClick={startDemo}
+            className="w-full py-3.5 rounded-2xl border-2 border-violet-500 text-violet-600 dark:text-violet-400 font-semibold text-sm hover:bg-violet-50 dark:hover:bg-violet-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          >
+            ⚡ Demo sesión (15 seg)
+          </button>
+        )}
+        {demoRunning && (
+          <div className="w-full py-3.5 rounded-2xl bg-violet-600/10 border-2 border-violet-500 flex items-center justify-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-violet-500 animate-pulse" />
+            <span className="text-sm font-semibold text-violet-400">Demo en progreso…</span>
+          </div>
+        )}
+
         {/* Botón simular fatiga crítica */}
-        <button
-          id="btn-simulate-critical"
-          onClick={simulateCritical}
-          className="w-full py-3.5 rounded-2xl border-2 border-red-500 text-red-600 dark:text-red-400 font-semibold text-sm hover:bg-red-50 dark:hover:bg-red-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-        >
-          <AlertTriangle className="w-4 h-4" />
-          Simular Fatiga Crítica
-        </button>
+        {!demoRunning && (
+          <button
+            id="btn-simulate-critical"
+            onClick={simulateCritical}
+            className="w-full py-3.5 rounded-2xl border-2 border-red-500 text-red-600 dark:text-red-400 font-semibold text-sm hover:bg-red-50 dark:hover:bg-red-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          >
+            <AlertTriangle className="w-4 h-4" />
+            Simular Fatiga Crítica
+          </button>
+        )}
+
+        {/* Resultado Demo — modal centrado, sin necesidad de scroll */}
+        {demoResult && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={closeDemo}
+          >
+            <div
+              className="relative w-full max-w-xs bg-white dark:bg-[#1a2332] rounded-3xl shadow-2xl border border-white/10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Botón cerrar — siempre visible arriba a la derecha */}
+              <button
+                onClick={closeDemo}
+                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors z-10"
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+
+              <div className="p-5 space-y-4">
+                <div className="text-center pr-6">
+                  <div className="text-3xl mb-1">📊</div>
+                  <h2 className="text-sm font-black text-gray-900 dark:text-white">Resultado de sesión</h2>
+                  <p className="text-[10px] text-gray-400">Duración: 15 seg · Demo</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-3 text-center border border-amber-200 dark:border-amber-800">
+                    <p className="text-[9px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">Estado</p>
+                    <p className="text-sm font-black text-amber-700 dark:text-amber-300 mt-1">⚠️ Warning</p>
+                  </div>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-3 text-center border border-blue-200 dark:border-blue-800">
+                    <p className="text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">BPM prom.</p>
+                    <p className="text-2xl font-black text-blue-700 dark:text-blue-300 mt-1">{demoResult.bpm}</p>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-3 text-center border border-gray-200 dark:border-gray-700">
+                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">EAR prom.</p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">{demoResult.ear}</p>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-3 text-center border border-gray-200 dark:border-gray-700">
+                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Parpadeos</p>
+                    <p className="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">{demoResult.blinks}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
+                  <p className="text-[10px] text-amber-700 dark:text-amber-300 text-center leading-relaxed">
+                    ⚠️ Fatiga moderada detectada. El sistema activó el filtro de luz cálida durante el pico crítico.
+                  </p>
+                </div>
+
+                <button
+                  onClick={closeDemo}
+                  className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </>
