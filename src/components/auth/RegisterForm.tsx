@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react';
 
@@ -10,10 +10,29 @@ export function RegisterForm() {
   const [fullName, setFullName] = useState('');
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
+  const [careerId, setCareerId] = useState<string>('');
+  const [careers,  setCareers]  = useState<Array<{ id: string; name: string }>>([]);
   const [showPw,   setShowPw]   = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
   const [done,     setDone]     = useState(false);
+
+  // Cargar carreras disponibles
+  useEffect(() => {
+    const fetchCareers = async () => {
+      try {
+        const { data, error: err } = await supabase
+          .from('careers')
+          .select('id, name')
+          .order('name');
+        if (err) throw err;
+        setCareers(data || []);
+      } catch (e) {
+        console.error('Error al cargar carreras:', e);
+      }
+    };
+    fetchCareers();
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,6 +45,12 @@ export function RegisterForm() {
       return;
     }
 
+    if (!careerId) {
+      setError('Por favor selecciona una carrera.');
+      setLoading(false);
+      return;
+    }
+
     const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -33,9 +58,10 @@ export function RegisterForm() {
         data: {
           full_name: fullName,
           role: 'student',
+          career_id: careerId,
         },
         // Forza a que el correo te redirija a la misma URL de donde estás registrándote
-        emailRedirectTo: `${window.location.origin}/dashboard/onboarding`,
+        emailRedirectTo: `${window.location.origin}/dashboard`,
       },
     });
 
@@ -117,6 +143,26 @@ export function RegisterForm() {
           placeholder="tu@correo.com"
           className="w-full rounded-xl border border-white/10 bg-[#0f1923] px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
         />
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="reg-career" className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          Carrera
+        </label>
+        <select
+          id="reg-career"
+          required
+          value={careerId}
+          onChange={(e) => setCareerId(e.target.value)}
+          className="w-full rounded-xl border border-white/10 bg-[#0f1923] px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer"
+        >
+          <option value="">Selecciona una carrera...</option>
+          {careers.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="space-y-1.5">

@@ -294,6 +294,14 @@ export default function MonitorPage() {
           console.error('Error al cerrar sesión:', err);
         }
       })();
+
+      // Activar filtro azul POST-sesión si hubo estrés (warning o critical)
+      if (currentValuesRef.current.level === 'warning' || currentValuesRef.current.level === 'critical') {
+        setBlueLightActive(true);
+        setTimeout(() => {
+          setBlueLightActive(false);
+        }, 5000);
+      }
     }
 
     // Limpiar UI
@@ -302,7 +310,6 @@ export default function MonitorPage() {
     setBpm(0);
     setBlinkCount(0);
     setFatigueLevel('normal');
-    setBlueLightActive(false);
   }, [supabase]);
 
   const simulateCritical = useCallback(() => {
