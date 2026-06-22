@@ -48,6 +48,7 @@ export default function MonitorPage() {
   const blinkCounter    = useRef(0);
   const earBelowCount   = useRef(0);
   const lastLogTime     = useRef(0);
+  const lastUIUpdate    = useRef(0);
   const sessionId       = useRef(crypto.randomUUID());
   const animFrameRef    = useRef<number>(0);
   const currentValuesRef = useRef({ earL: 0, earR: 0, bpm: 0, level: 'normal' as FatigueLevel, blueLight: false });
@@ -363,7 +364,7 @@ export default function MonitorPage() {
       return { earL: lastKf.earL, earR: lastKf.earR, bpm: lastKf.bpm, blinks: lastKf.blinks };
     };
 
-    // Actualizar cada ~100ms con pequeñas variaciones realistas
+    // Actualizar cada ~500ms con pequeñas variaciones realistas (cambio suave)
     const startTime = Date.now();
     const updateInterval = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -387,11 +388,12 @@ export default function MonitorPage() {
       // Actualizar fatiga basada en BPM interpolado (suave, no saltos)
       const level = classifyFatigue(interpolated.bpm);
       setFatigueLevel(level);
+      // Filtro azul SOLO en crítico, NO en warning
       setBlueLightActive(level === 'critical');
 
       // Parpadeos aumentan durante estrés crítico
       setBlinkCount(Math.round(interpolated.blinks));
-    }, 100);
+    }, 500);
 
     // Resultado final a los 30s
     demoTimerRef.current = setTimeout(() => {

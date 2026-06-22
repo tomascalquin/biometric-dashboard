@@ -16,13 +16,28 @@ function fmtDuration(start: string, end: string | null): string {
 }
 
 function fmtDate(iso: string): string {
+  // Crear fecha con timezone de Chile (UTC-3 en invierno, UTC-4 en verano)
   const d = new Date(iso);
   const now = new Date();
   const diffDays = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
-  const time = d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  
+  // Formatear hora en zona horaria de Chile
+  const time = d.toLocaleTimeString('es-CL', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    timeZone: 'America/Santiago'
+  });
+  
+  // Formatear fecha
+  const dateStr = d.toLocaleDateString('es-CL', { 
+    day: 'numeric', 
+    month: 'short',
+    timeZone: 'America/Santiago'
+  });
+  
   if (diffDays === 0) return `Hoy · ${time}`;
   if (diffDays === 1) return `Ayer · ${time}`;
-  return `${d.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })} · ${time}`;
+  return `${dateStr} · ${time}`;
 }
 
 function dominantLevel(
