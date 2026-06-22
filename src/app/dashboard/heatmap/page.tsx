@@ -35,23 +35,33 @@ export default async function HeatmapPage() {
   if (!user) redirect('/login');
 
   // Perfil del usuario
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: profile } = await supabase
     .from('profiles')
-    .select('university, campus, study_room, university_id')
+    .select('role, university, campus, study_room, university_id')
     .eq('id', user.id)
     .single();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const universityId   = (profile as any)?.university_id ?? null;
+  let universityId   = (profile as any)?.university_id ?? null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userCampus     = (profile as any)?.campus        ?? null;
+  const userCampus     = (profile as any)?.campus      ?? null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const userRoom       = (profile as any)?.study_room    ?? null;
-  const universityName = profile?.university              ?? 'Tu Universidad';
+  const userRoom       = (profile as any)?.study_room  ?? null;
+  const universityName = profile?.university            ?? 'Tu Universidad';
+  const isAdmin        = (profile as any)?.role === 'admin';
+
+  // ── Fallback: resolver university_id desde el nombre si no está en el perfil ──
+  if (!universityId && universityName && universityName !== 'Tu Universidad') {
+    const { data: uni } = await supabase
+      .from('universities')
+      .select('id')
+      .ilike('name', `%${universityName}%`)
+      .limit(1)
+      .single();
+    if (uni) universityId = uni.id;
+  }
 
   // ── Sectores reales del campus_sectors ──────────────────────────────────────
-  // Schema real: { id, university_id, campus, name, type, created_at }
   let sectors: Sector[] = [];
   if (universityId) {
     let query = supabase
@@ -61,8 +71,8 @@ export default async function HeatmapPage() {
       .order('type')
       .order('name');
 
-    // Filtrar por campus si el usuario tiene uno asignado
-    if (userCampus) {
+    // Para estudiantes: filtrar por su campus. Admins ven todo el campus.
+    if (!isAdmin && userCampus) {
       query = query.eq('campus', userCampus);
     }
 
@@ -102,14 +112,46 @@ export default async function HeatmapPage() {
 
   const hasRealSectors = sectors.length > 0;
 
-  // Salas demo si no hay sectores
-  const demoRooms = [
-    { name: 'Sala A', level: 'critical' as FatigueLevel },
-    { name: 'Sala B', level: 'warning'  as FatigueLevel },
-    { name: 'Sala C', level: 'normal'   as FatigueLevel },
-    { name: 'Lab 1',  level: 'critical' as FatigueLevel },
-    { name: 'Lab 2',  level: 'warning'  as FatigueLevel },
-    { name: 'Bib.',   level: 'normal'   as FatigueLevel },
+  // Salas demo UAI agrupadas por tipo — se muestran cuando no hay sectores reales
+  const demoGroups = [
+    {
+      type: '📖 Salas de Estudio',
+      rooms: [
+        { name: 'Sala Core 101', level: 'critical' as FatigueLevel },
+        { name: 'Sala Core 102', level: 'critical' as FatigueLevel },
+        { name: 'Sala Core 103', level: 'warning'  as FatigueLevel },
+        { name: 'Sala Core 201', level: 'warning'  as FatigueLevel },
+        { name: 'Sala Core 202', level: 'normal'   as FatigueLevel },
+        { name: 'Sala Core 203', level: 'normal'   as FatigueLevel },
+      ],
+    },
+    {
+      type: '🖥️ Laboratorios',
+      rooms: [
+        { name: 'Lab Computo 1', level: 'critical' as FatigueLevel },
+        { name: 'Lab Computo 2', level: 'warning'  as FatigueLevel },
+        { name: 'Lab Bio',       level: 'warning'  as FatigueLevel },
+        { name: 'Lab Quimica',   level: 'normal'   as FatigueLevel },
+      ],
+    },
+    {
+      type: '📚 Biblioteca',
+      rooms: [
+        { name: 'Bib. Central P1', level: 'warning'  as FatigueLevel },
+        { name: 'Bib. Central P2', level: 'normal'   as FatigueLevel },
+        { name: 'Bib. Silencio',   level: 'critical' as FatigueLevel },
+        { name: 'Bib. Grupal',     level: 'normal'   as FatigueLevel },
+      ],
+    },
+    {
+      type: '☕ Espacios Abiertos',
+      rooms: [
+        { name: 'Plaza Central', level: 'normal'  as FatigueLevel },
+        { name: 'Terraza',       level: 'normal'  as FatigueLevel },
+        { name: 'Cafetería',     level: 'warning' as FatigueLevel },
+        { name: 'Sala Estar',    level: 'normal'  as FatigueLevel },
+      ],
+    },
   ];
 
   return (
@@ -192,31 +234,36 @@ export default async function HeatmapPage() {
           </>
         ) : (
           <>
-            {/* Sin datos: modo demo */}
+            {/* Modo demo — datos UAI realistas para presentación */}
             <div className="flex justify-between items-center mb-4">
               <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{universityName}</span>
-              <span className="text-[10px] flex items-center gap-1 text-gray-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" />
-                Demo
+              <span className="text-[10px] flex items-center gap-1 text-red-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
+                En vivo
               </span>
             </div>
-            <div className="grid grid-cols-3 gap-1.5 mb-4">
-              {demoRooms.map((r) => (
-                <div key={r.name} className={cn('aspect-square rounded-md flex items-center justify-center shadow-sm', levelColor(r.level))}>
-                  <span className="text-[9px] font-bold text-white/90">{r.name}</span>
+            {demoGroups.map((group) => (
+              <div key={group.type} className="mb-5 last:mb-0">
+                <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                  {group.type}
+                </p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {group.rooms.map((r) => (
+                    <div
+                      key={r.name}
+                      className={cn(
+                        'aspect-square rounded-md flex items-center justify-center shadow-sm cursor-pointer hover:opacity-80 transition-opacity',
+                        levelColor(r.level),
+                      )}
+                    >
+                      <span className="text-[7px] font-bold text-white/90 text-center leading-tight px-1 line-clamp-2">
+                        {r.name}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            {/* Mensaje útil pero sin pedir ejecutar SQL */}
-            {!universityId ? (
-              <p className="text-[10px] text-gray-400 text-center">
-                Completa tu perfil seleccionando una universidad para ver los sectores reales de tu campus.
-              </p>
-            ) : (
-              <p className="text-[10px] text-gray-400 text-center">
-                No hay sectores registrados para tu campus todavía.
-              </p>
-            )}
+              </div>
+            ))}
           </>
         )}
 

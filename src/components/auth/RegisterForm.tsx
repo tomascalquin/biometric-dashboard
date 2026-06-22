@@ -34,6 +34,8 @@ export function RegisterForm() {
           full_name: fullName,
           role: 'student',
         },
+        // Forza a que el correo te redirija a la misma URL de donde estás registrándote
+        emailRedirectTo: `${window.location.origin}/dashboard/onboarding`,
       },
     });
 
