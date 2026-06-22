@@ -18,8 +18,8 @@ export default async function DashboardPage() {
   const role = profile?.role ?? 'student';
 
   // ── Redirect a onboarding si el estudiante no ha completado su perfil ──
-  // Considera onboarding completo si tiene career_id O full_name (texto libre).
-  if (role === 'student' && !profile?.career_id && !profile?.full_name) {
+  // Considera onboarding completo solo si tiene career_id.
+  if (role === 'student' && !profile?.career_id) {
     redirect('/dashboard/onboarding');
   }
 

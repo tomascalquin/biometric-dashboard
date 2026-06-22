@@ -1,9 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronRight, Download, FileText, Settings, Users } from 'lucide-react';
+import { ChevronRight, Download, FileText, Settings, Users, LogOut } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 
 export default function ConfigPage() {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
   return (
     <div className="p-4 space-y-5">
 
@@ -46,6 +55,19 @@ export default function ConfigPage() {
           <ActionRow icon={Users} title="Gestionar usuarios" />
           <Divider />
           <ActionRow icon={Settings} title="Configurar campus" />
+        </div>
+      </section>
+
+      <section>
+        <h3 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-widest uppercase mb-2 ml-1">Cuenta</h3>
+        <div className="bg-white dark:bg-[#1a2332] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+          <button
+            onClick={handleSignOut}
+            className="w-full p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+          >
+            <LogOut className="w-5 h-5 text-red-500" />
+            <span className="text-sm font-medium text-red-500">Cerrar sesión</span>
+          </button>
         </div>
       </section>
 

@@ -348,6 +348,7 @@ export default function LandingPage() {
           <div className="flex gap-5 text-xs text-gray-600">
             <Link href="/login"    className="hover:text-gray-300 transition-colors">Iniciar sesión</Link>
             <Link href="/register" className="hover:text-gray-300 transition-colors">Registrarse</Link>
+            <Link href="/privacidad" className="hover:text-gray-300 transition-colors">Privacidad</Link>
             <a href="mailto:contacto@biometricos.cl" className="hover:text-gray-300 transition-colors">Contacto</a>
           </div>
         </div>

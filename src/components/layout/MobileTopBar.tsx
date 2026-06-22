@@ -1,6 +1,7 @@
 'use client';
 
 import { Bell } from 'lucide-react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 interface MobileTopBarProps {
@@ -50,10 +51,10 @@ export function MobileTopBar({ name, role, subtitle, career }: MobileTopBarProps
         </div>
 
         {/* Notifications */}
-        <button className="p-2 relative rounded-full hover:bg-white/10 transition-colors flex-shrink-0">
+        <Link href={isAdmin ? "/dashboard/alerts" : "/dashboard/history"} className="p-2 relative rounded-full hover:bg-white/10 transition-colors flex-shrink-0">
           <Bell className="w-5 h-5 text-gray-300" />
           <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full border border-[#1a2332]"></span>
-        </button>
+        </Link>
       </div>
     </div>
   );

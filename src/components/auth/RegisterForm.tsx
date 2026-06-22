@@ -61,7 +61,7 @@ export function RegisterForm() {
           career_id: careerId,
         },
         // Forza a que el correo te redirija a la misma URL de donde estás registrándote
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: `${window.location.origin}/dashboard/onboarding`,
       },
     });
 
@@ -78,8 +78,8 @@ export function RegisterForm() {
       return;
     }
 
-    // Sin confirmación de email → redirigir al dashboard con hard navigation
-    window.location.href = '/dashboard';
+    // Sin confirmación de email → redirigir al onboarding con hard navigation
+    window.location.href = '/dashboard/onboarding';
   }
 
   // Estado: email enviado

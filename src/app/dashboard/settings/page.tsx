@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Download, Shield, LogOut, ChevronRight, User, BookOpen, MapPin, Loader2, CheckCircle } from 'lucide-react';
+import { Download, Shield, LogOut, ChevronRight, User, BookOpen, MapPin, Loader2, CheckCircle, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface Profile {
   full_name: string | null;
@@ -33,6 +34,7 @@ export default function SettingsPage() {
   // Toggles (solo UI, no persisten aún)
   const [blueLight,  setBlueLight]  = useState(false);
   const [pushAlerts, setPushAlerts] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -211,13 +213,15 @@ export default function SettingsPage() {
             <ChevronRight className="w-4 h-4 text-gray-400" />
           </button>
           <Divider />
-          <button className="w-full p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+          <Link 
+            href="/privacidad"
+            className="w-full p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
             <div className="flex items-center gap-3">
               <Shield className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Política de privacidad</span>
             </div>
             <ChevronRight className="w-4 h-4 text-gray-400" />
-          </button>
+          </Link>
           <Divider />
           <button
             onClick={handleSignOut}

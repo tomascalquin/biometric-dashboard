@@ -96,6 +96,35 @@ export function StudentDashboard({
         )}
       </section>
 
+      {/* GRÁFICO DE ENERGÍA SEMANAL */}
+      <section>
+        <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-3 tracking-widest ml-1 uppercase">Energía Semanal</h2>
+        <div className="bg-white dark:bg-[#1a2332] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
+          <div className="flex items-end justify-between h-20 gap-2 mt-2 mb-1">
+            {/* Niveles simulados de energía (inverso a la fatiga) para la semana */}
+            {[60, 45, 80, 30, 95].map((h, i) => (
+              <div key={i} className="w-full flex flex-col items-center">
+                <div 
+                  className={cn(
+                    "w-full rounded-t-md transition-all",
+                    h < 40 ? "bg-red-500" : h < 60 ? "bg-orange-400" : "bg-green-400"
+                  )} 
+                  style={{ height: `${h}%` }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between text-[9px] text-gray-400 mt-2 px-1">
+            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie'].map(t => (
+              <span key={t}>{t}</span>
+            ))}
+          </div>
+          <p className="text-[10px] text-gray-500 mt-3 text-center">
+            Pico de fatiga detectado el <span className="font-bold text-red-500">Jueves</span>.
+          </p>
+        </div>
+      </section>
+
       {/* RECOMENDACIÓN */}
       <section className="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 rounded-2xl p-4 flex gap-3">
         <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />

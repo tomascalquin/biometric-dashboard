@@ -44,6 +44,7 @@ export default function MonitorPage() {
   const canvasRef       = useRef<HTMLCanvasElement>(null);
   const streamRef       = useRef<MediaStream | null>(null);
   const faceMeshRef     = useRef<any>(null);
+  const cameraRef       = useRef<any>(null);
   const blinkTimestamps = useRef<number[]>([]);
   const blinkCounter    = useRef(0);
   const earBelowCount   = useRef(0);
@@ -236,8 +237,10 @@ export default function MonitorPage() {
         },
         width: 640, height: 480,
       });
+      cameraRef.current = camera;
       await camera.start();
       setIsRunning(true);
+      lastLogTime.current = Date.now(); // <-- EVITA LOG INMEDIATO
     } catch (err: any) {
       setError(
         err.name === 'NotAllowedError'
@@ -256,14 +259,26 @@ export default function MonitorPage() {
 
   const stopMonitor = useCallback(() => {
     // Detener stream de cámara INMEDIATAMENTE
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => {
+        t.stop();
+      });
+      streamRef.current = null;
+    }
+    if (cameraRef.current) {
+      cameraRef.current.stop();
+      cameraRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     setIsRunning(false);
 
     // Cerrar sesión en DB de forma asincrónica (sin bloquear cierre de cámara)
     if (dbSessionId.current) {
       const sessionId = dbSessionId.current;
+      const wasCritical = currentValuesRef.current.level === 'warning' || currentValuesRef.current.level === 'critical';
       dbSessionId.current = null;
       
       // Enviar telemetría final y cerrar sesión
@@ -293,15 +308,15 @@ export default function MonitorPage() {
         } catch (err) {
           console.error('Error al cerrar sesión:', err);
         }
+        
+        // Activar filtro azul POST-sesión si hubo estrés (solo DESPUÉS de cerrar sesión)
+        if (wasCritical) {
+          setBlueLightActive(true);
+          setTimeout(() => {
+            setBlueLightActive(false);
+          }, 5000);
+        }
       })();
-
-      // Activar filtro azul POST-sesión si hubo estrés (warning o critical)
-      if (currentValuesRef.current.level === 'warning' || currentValuesRef.current.level === 'critical') {
-        setBlueLightActive(true);
-        setTimeout(() => {
-          setBlueLightActive(false);
-        }, 5000);
-      }
     }
 
     // Limpiar UI
@@ -408,8 +423,18 @@ export default function MonitorPage() {
       clearInterval(updateInterval);
       setBlueLightActive(false);
       setDemoRunning(false);
-      stopMonitor();
-      setDemoResult({ bpm: 11, level: 'warning', ear: 0.22, blinks: 12 });
+      
+      // Enviar una telemetría simulada a la BD para que el historial cuadre con el demo
+      const finalBpm = currentValuesRef.current.bpm > 0 ? currentValuesRef.current.bpm : 11;
+      const finalEar = currentValuesRef.current.earL > 0 ? currentValuesRef.current.earL.toFixed(2) : 0.22;
+      const finalLevel = currentValuesRef.current.level !== 'normal' ? currentValuesRef.current.level : 'warning';
+      const finalBlinks = blinkCounter.current > 0 ? blinkCounter.current : 12;
+
+      void sendTelemetry(Number(finalEar), Number(finalEar), finalBpm, finalLevel, finalLevel === 'critical').then(() => {
+        stopMonitor();
+      });
+      
+      setDemoResult({ bpm: finalBpm, level: finalLevel, ear: Number(finalEar), blinks: finalBlinks });
       setEarLeft(0); setEarRight(0); setBpm(0); setBlinkCount(0); setFatigueLevel('normal');
     }, 30000);
   }, [startMonitor, stopMonitor]);
@@ -588,9 +613,11 @@ export default function MonitorPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-3 text-center border border-amber-200 dark:border-amber-800">
-                    <p className="text-[9px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">Estado</p>
-                    <p className="text-sm font-black text-amber-700 dark:text-amber-300 mt-1">⚠️ Warning</p>
+                  <div className={`bg-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-50 dark:bg-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-900/20 rounded-2xl p-3 text-center border border-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-200 dark:border-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-800`}>
+                    <p className={`text-[9px] text-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-600 dark:text-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-400 font-bold uppercase tracking-wider`}>Estado</p>
+                    <p className={`text-sm font-black text-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-700 dark:text-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-300 mt-1`}>
+                      {demoResult.level === 'critical' ? '🚨 Crítico' : demoResult.level === 'warning' ? '⚠️ Warning' : '✅ Normal'}
+                    </p>
                   </div>
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-3 text-center border border-blue-200 dark:border-blue-800">
                     <p className="text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">BPM prom.</p>
@@ -606,9 +633,9 @@ export default function MonitorPage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
-                  <p className="text-[10px] text-amber-700 dark:text-amber-300 text-center leading-relaxed">
-                    ⚠️ Fatiga moderada detectada. El sistema activó el filtro de luz cálida durante el pico crítico.
+                <div className={`rounded-2xl p-3 border ${demoResult.level === 'critical' ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' : demoResult.level === 'warning' ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800' : 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'}`}>
+                  <p className={`text-[10px] text-center leading-relaxed ${demoResult.level === 'critical' ? 'text-red-700 dark:text-red-300' : demoResult.level === 'warning' ? 'text-amber-700 dark:text-amber-300' : 'text-green-700 dark:text-green-300'}`}>
+                    {demoResult.level === 'critical' ? '🚨 Fatiga severa detectada. Riesgo inminente. El sistema activó luz cálida.' : demoResult.level === 'warning' ? '⚠️ Fatiga moderada. Se sugiere tomar un descanso pronto.' : '✅ Tus niveles de energía son óptimos. Sigue así.'}
                   </p>
                 </div>
 
