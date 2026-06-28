@@ -131,22 +131,22 @@ export default async function HistoryPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-widest uppercase mb-0.5">
+        <h1 className="text-[10px] font-bold text-[#7a8fb0] tracking-widest uppercase mb-0.5">
           Historial
         </h1>
-        <p className="text-[10px] text-gray-400">Últimas sesiones de estudio</p>
+        <p className="text-[10px] text-[#b0bdd6]">Últimas sesiones de estudio</p>
       </div>
 
       {/* Últimas Sesiones */}
-      <section className="bg-white dark:bg-[#1a2332] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-        <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-widest uppercase mb-4">
+      <section className="bg-white rounded-2xl p-4 shadow-sm border border-[#e2e8f4]">
+        <h2 className="text-[10px] font-bold text-[#7a8fb0] tracking-widest uppercase mb-4">
           Últimas Sesiones
         </h2>
 
         {sessions.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-sm text-gray-400">Sin sesiones registradas</p>
-            <p className="text-[10px] text-gray-500 mt-1">
+            <p className="text-sm font-semibold text-[#7a8fb0]">Sin sesiones registradas</p>
+            <p className="text-[10px] text-[#b0bdd6] mt-1">
               Inicia el monitor para comenzar a medir
             </p>
           </div>
@@ -159,7 +159,7 @@ export default async function HistoryPage() {
               const label = level === 'critical' ? 'Crítico' : level === 'warning' ? 'Warning' : 'Normal';
               return (
                 <div key={s.id}>
-                  {i > 0 && <div className="h-px bg-gray-100 dark:bg-gray-800 w-full" />}
+                  {i > 0 && <div className="h-px bg-[#e2e8f4] w-full" />}
                   <SessionRow
                     name={s.subject_name_override ?? 'Sesión de estudio'}
                     time={`${fmtDate(s.started_at)}${s.ended_at ? ` — ${fmtDuration(s.started_at, s.ended_at)}` : ' · En curso'}`}
@@ -175,8 +175,8 @@ export default async function HistoryPage() {
       </section>
 
       {/* Resumen Semana */}
-      <section className="bg-white dark:bg-[#1a2332] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-        <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-widest uppercase mb-4">
+      <section className="bg-white rounded-2xl p-4 shadow-sm border border-[#e2e8f4]">
+        <h2 className="text-[10px] font-bold text-[#7a8fb0] tracking-widest uppercase mb-4">
           Resumen Semana
         </h2>
 
@@ -208,12 +208,12 @@ export default async function HistoryPage() {
         </div>
 
         {/* Gráfica BPM */}
-        <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
-          <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-3 font-medium">
+        <div className="pt-4 border-t border-[#e2e8f4]">
+          <p className="text-[10px] text-[#7a8fb0] mb-3 font-semibold">
             Tendencia BPM — últimos 7 días
           </p>
           {dayData.every((d) => !d.hasData) ? (
-            <p className="text-[10px] text-gray-400 text-center py-4">
+            <p className="text-[10px] font-semibold text-[#b0bdd6] text-center py-4">
               Sin datos de telemetría esta semana
             </p>
           ) : (
@@ -238,20 +238,20 @@ function SessionRow({
 }) {
   const badgeClass =
     level === 'critical'
-      ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+      ? 'bg-red-50 text-red-700'
       : level === 'warning'
-      ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
-      : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400';
+      ? 'bg-amber-50 text-amber-700'
+      : 'bg-green-50 text-green-700';
   const dotClass =
-    level === 'critical' ? 'bg-red-500' : level === 'warning' ? 'bg-orange-500' : 'bg-green-500';
+    level === 'critical' ? 'bg-red-500' : level === 'warning' ? 'bg-amber-500' : 'bg-green-500';
 
   return (
     <div className="flex items-center justify-between py-3 gap-2">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{name}</p>
-        <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 truncate">{time}</p>
+        <p className="text-sm font-bold text-[#0a1628] truncate">{name}</p>
+        <p className="text-[10px] font-semibold text-[#7a8fb0] mt-0.5 truncate">{time}</p>
         {bpm !== null && (
-          <p className="text-[10px] text-gray-400 mt-0.5">BPM prom: {bpm}</p>
+          <p className="text-[10px] font-semibold text-[#b0bdd6] mt-0.5">BPM prom: {bpm}</p>
         )}
       </div>
       <div className={cn('px-2.5 py-1 rounded-lg flex items-center gap-1.5 flex-shrink-0', badgeClass)}>
@@ -268,10 +268,10 @@ function StatBox({
   label: string; value: string; sub: string; valueColor: string;
 }) {
   return (
-    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-3">
-      <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1">{label}</p>
-      <p className={cn('text-xl font-bold leading-none', valueColor)}>{value}</p>
-      <p className="text-[10px] text-gray-400 mt-1">{sub}</p>
+    <div className="bg-[#f8fafd] border border-[#e2e8f4] rounded-xl p-3">
+      <p className="text-[10px] text-[#7a8fb0] font-semibold mb-1">{label}</p>
+      <p className={cn('text-xl font-black leading-none', valueColor)}>{value}</p>
+      <p className="text-[10px] text-[#b0bdd6] font-semibold mt-1">{sub}</p>
     </div>
   );
 }
@@ -283,16 +283,16 @@ function Bar({
   level: 'normal' | 'warning' | 'critical'; hasData: boolean;
 }) {
   const color = hasData
-    ? level === 'normal' ? 'bg-green-500' : level === 'warning' ? 'bg-orange-500' : 'bg-red-500'
-    : 'bg-gray-200 dark:bg-gray-700';
+    ? level === 'normal' ? 'bg-green-500' : level === 'warning' ? 'bg-amber-500' : 'bg-red-500'
+    : 'bg-[#e2e8f4]';
   return (
     <div className="flex flex-col items-center gap-1 w-full">
-      <span className="text-[8px] text-gray-400">{hasData ? value : ''}</span>
+      <span className="text-[8px] font-semibold text-[#b0bdd6]">{hasData ? value : ''}</span>
       <div
         className={cn('w-full rounded-t-sm transition-all', color)}
         style={{ height: `${Math.max(pct, hasData ? 10 : 4)}%` }}
       />
-      <span className="text-[10px] font-medium text-gray-500">{day}</span>
+      <span className="text-[10px] font-bold text-[#7a8fb0]">{day}</span>
     </div>
   );
 }

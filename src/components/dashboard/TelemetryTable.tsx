@@ -10,13 +10,13 @@ interface TelemetryTableProps {
 
 export function TelemetryTable({ logs }: TelemetryTableProps) {
   return (
-    <section aria-label="Registros de telemetría recientes">
-      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-        Últimos registros
+    <section aria-label="Registros de telemetría recientes" className="mt-8">
+      <h2 className="text-sm font-bold text-[#0a1628] mb-3">
+        Últimos registros de telemetría (Debug)
       </h2>
-      <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+      <div className="overflow-x-auto rounded-xl border border-[#e2e8f4]">
         <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 dark:bg-gray-900 text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+          <thead className="bg-[#f8fafd] text-xs font-semibold text-[#7a8fb0] uppercase tracking-wide">
             <tr>
               {HEADERS.map((h) => (
                 <th key={h} scope="col" className="px-4 py-3 font-medium">
@@ -25,19 +25,19 @@ export function TelemetryTable({ logs }: TelemetryTableProps) {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+          <tbody className="divide-y divide-[#e2e8f4]">
             {logs.map((log) => (
               <tr
                 key={log.id}
-                className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                className="hover:bg-[#f8fafd] transition-colors"
               >
-                <td className="px-4 py-3 text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
+                <td className="px-4 py-3 font-semibold text-[#7a8fb0] tabular-nums whitespace-nowrap">
                   {new Date(log.created_at).toLocaleTimeString('es-CL')}
                 </td>
-                <td className="px-4 py-3 font-mono text-xs text-gray-600 dark:text-gray-400">
+                <td className="px-4 py-3 font-mono font-bold text-xs text-[#3a4a6b]">
                   {log.device_id}
                 </td>
-                <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">
+                <td className="px-4 py-3 font-semibold text-[#3a4a6b] text-xs">
                   {log.career_id}
                 </td>
                 <td className="px-4 py-3 font-semibold tabular-nums">
@@ -54,9 +54,9 @@ export function TelemetryTable({ logs }: TelemetryTableProps) {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  {log.blue_light_active ? (
-                    <span className="text-indigo-600 dark:text-indigo-400 font-medium text-xs">
-                      Activo
+                  {log.session_id ? (
+                    <span className="text-[#003087] font-bold text-xs">
+                      {log.session_id.slice(0, 8)}...
                     </span>
                   ) : (
                     <span className="text-gray-400 text-xs">—</span>

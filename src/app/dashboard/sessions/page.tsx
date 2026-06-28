@@ -77,10 +77,10 @@ export default async function SessionsPage() {
   return (
     <div className="p-4 space-y-5">
       <div>
-        <h1 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-widest uppercase mb-0.5">
+        <h1 className="text-[10px] font-bold text-[#7a8fb0] tracking-widest uppercase mb-0.5">
           Sesiones de Estudio
         </h1>
-        <p className="text-[10px] text-gray-400">Últimos 30 días</p>
+        <p className="text-[10px] text-[#b0bdd6]">Últimos 30 días</p>
       </div>
 
       {/* Métricas rápidas */}
@@ -91,21 +91,21 @@ export default async function SessionsPage() {
           value={totalMin > 0 ? `${Math.floor(totalMin / 60)}h ${totalMin % 60}m` : '—'}
           color="text-green-500"
         />
-        <StatMini label="Activas" value={String(active.length)} color={active.length > 0 ? 'text-orange-500' : 'text-gray-400'} />
+        <StatMini label="Activas" value={String(active.length)} color={active.length > 0 ? 'text-amber-500' : 'text-[#b0bdd6]'} />
       </div>
 
       {/* CTA nueva sesión */}
       <Link
         href="/dashboard/monitor"
-        className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-sm transition-all shadow-md"
+        className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-[#003087] hover:bg-[#002070] active:scale-[0.98] text-white font-semibold text-sm transition-all shadow-md"
       >
         👁️ Iniciar nueva sesión
       </Link>
 
       {/* Sesiones activas */}
       {active.length > 0 && (
-        <section className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/50 rounded-2xl p-4">
-          <h2 className="text-[10px] font-bold text-orange-500 dark:text-orange-400 tracking-widest uppercase mb-3">
+        <section className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+          <h2 className="text-[10px] font-bold text-amber-600 tracking-widest uppercase mb-3">
             🟠 En curso
           </h2>
           <div className="space-y-2">
@@ -117,20 +117,20 @@ export default async function SessionsPage() {
       )}
 
       {/* Sesiones completadas */}
-      <section className="bg-white dark:bg-[#1a2332] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-        <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-widest uppercase mb-4">
+      <section className="bg-white rounded-2xl p-4 shadow-sm border border-[#e2e8f4]">
+        <h2 className="text-[10px] font-bold text-[#7a8fb0] tracking-widest uppercase mb-4">
           Completadas
         </h2>
         {completed.length === 0 ? (
           <div className="text-center py-6">
-            <p className="text-sm text-gray-400">Sin sesiones completadas</p>
-            <p className="text-[10px] text-gray-500 mt-1">Usa el monitor para comenzar a medir</p>
+            <p className="text-sm font-semibold text-[#7a8fb0]">Sin sesiones completadas</p>
+            <p className="text-[10px] text-[#b0bdd6] mt-1">Usa el monitor para comenzar a medir</p>
           </div>
         ) : (
           <div className="space-y-0">
             {completed.map((s, i) => (
               <div key={s.id}>
-                {i > 0 && <div className="h-px bg-gray-100 dark:bg-gray-800" />}
+                {i > 0 && <div className="h-px bg-[#e2e8f4]" />}
                 <SessionCard session={s} meta={telBySession.get(s.id) ?? null} />
               </div>
             ))}
@@ -143,9 +143,9 @@ export default async function SessionsPage() {
 
 function StatMini({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-3 text-center">
-      <p className={cn('text-xl font-bold leading-none', color)}>{value}</p>
-      <p className="text-[10px] text-gray-500 mt-1">{label}</p>
+    <div className="bg-[#f8fafd] border border-[#e2e8f4] rounded-xl p-3 text-center">
+      <p className={cn('text-xl font-black leading-none', color)}>{value}</p>
+      <p className="text-[10px] font-semibold text-[#7a8fb0] mt-1">{label}</p>
     </div>
   );
 }
@@ -158,23 +158,23 @@ function SessionCard({
 }) {
   const level = meta?.level ?? 'normal';
   const badgeClass =
-    level === 'critical' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-    : level === 'warning' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
-    : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400';
-  const dotClass = level === 'critical' ? 'bg-red-500' : level === 'warning' ? 'bg-orange-500' : 'bg-green-500';
+    level === 'critical' ? 'bg-red-50 text-red-700'
+    : level === 'warning' ? 'bg-amber-50 text-amber-700'
+    : 'bg-green-50 text-green-700';
+  const dotClass = level === 'critical' ? 'bg-red-500' : level === 'warning' ? 'bg-amber-500' : 'bg-green-500';
   const statusLabel = session.status === 'active' ? 'En curso' : level === 'critical' ? 'Crítico' : level === 'warning' ? 'Warning' : 'Normal';
 
   return (
     <div className="flex items-center justify-between py-3 gap-2">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+        <p className="text-sm font-bold text-[#0a1628] truncate">
           {session.subject_name_override ?? 'Sesión de estudio'}
         </p>
-        <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+        <p className="text-[10px] font-semibold text-[#7a8fb0] mt-0.5">
           {fmtDate(session.started_at)} · {fmtDur(session.started_at, session.ended_at)}
         </p>
         {meta && (
-          <p className="text-[10px] text-gray-400 mt-0.5">BPM prom: {meta.avgBpm}</p>
+          <p className="text-[10px] font-semibold text-[#b0bdd6] mt-0.5">BPM prom: {meta.avgBpm}</p>
         )}
       </div>
       <div className={cn('px-2.5 py-1 rounded-lg flex items-center gap-1.5 flex-shrink-0', badgeClass)}>

@@ -23,7 +23,7 @@ const TYPE_LABEL: Record<string, string> = {
 function levelColor(level: FatigueLevel): string {
   switch (level) {
     case 'critical': return 'bg-red-600';
-    case 'warning':  return 'bg-orange-500';
+    case 'warning':  return 'bg-amber-500';
     case 'normal':   return 'bg-green-500';
     default:         return 'bg-gray-600';
   }
@@ -155,36 +155,36 @@ export default async function HeatmapPage() {
   ];
 
   return (
-    <div className="p-4 space-y-5">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto">
 
       {/* Header */}
       <div>
-        <h1 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-widest uppercase mb-0.5">
+        <h1 className="text-xs md:text-sm font-bold text-[#7a8fb0] tracking-widest uppercase mb-1">
           {userCampus ? `${userCampus} — Mapa de Fatiga` : `${universityName} — Mapa de Fatiga`}
         </h1>
-        <p className="text-[10px] text-gray-400">Actualización en tiempo real</p>
+        <p className="text-xs md:text-sm text-[#b0bdd6] font-medium">Actualización en tiempo real</p>
       </div>
 
       {/* Tu estado actual */}
       {userLevel !== 'none' && (
         <div className={cn(
           'rounded-2xl p-4 border flex items-center gap-3',
-          userLevel === 'critical' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/50'
-          : userLevel === 'warning' ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800/50'
-          : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/50',
+          userLevel === 'critical' ? 'bg-red-50 border-red-200'
+          : userLevel === 'warning' ? 'bg-amber-50 border-amber-200'
+          : 'bg-green-50 border-green-200',
         )}>
-          <div className={cn('w-3 h-3 rounded-full animate-pulse flex-shrink-0', levelColor(userLevel))} />
+          <div className={cn('w-4 h-4 rounded-full animate-pulse flex-shrink-0', levelColor(userLevel))} />
           <div>
-            <p className={cn('text-sm font-bold',
-              userLevel === 'critical' ? 'text-red-700 dark:text-red-300'
-              : userLevel === 'warning' ? 'text-orange-700 dark:text-orange-300'
-              : 'text-green-700 dark:text-green-300',
+            <p className={cn('text-base md:text-lg font-bold',
+              userLevel === 'critical' ? 'text-red-700'
+              : userLevel === 'warning' ? 'text-amber-700'
+              : 'text-green-700',
             )}>
               Tu estado: {userLevel === 'critical' ? 'Fatiga Crítica' : userLevel === 'warning' ? 'Fatiga Moderada' : 'Normal'}
             </p>
             {userRoom && (
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1">
-                <MapPin className="w-3 h-3" /> {userRoom}
+              <p className="text-xs md:text-sm text-[#7a8fb0] mt-1 flex items-center gap-1.5 font-semibold">
+                <MapPin className="w-4 h-4" /> {userRoom}
               </p>
             )}
           </div>
@@ -192,21 +192,21 @@ export default async function HeatmapPage() {
       )}
 
       {/* Mapa por tipo de espacio */}
-      <section className="bg-white dark:bg-[#1a2332] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
+      <section className="bg-white rounded-3xl p-5 md:p-8 shadow-sm border border-[#e2e8f4]">
         {hasRealSectors ? (
           <>
             {allTypes.map((type) => (
-              <div key={type} className="mb-5 last:mb-0">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+              <div key={type} className="mb-8 last:mb-0">
+                <div className="flex justify-between items-center mb-4 md:mb-5">
+                  <span className="text-base md:text-lg font-bold text-[#0a1628]">
                     {TYPE_LABEL[type] ?? type}
                   </span>
-                  <span className="text-[10px] flex items-center gap-1 text-red-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
+                  <span className="text-xs md:text-sm font-bold flex items-center gap-1.5 text-red-500">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block" />
                     En vivo
                   </span>
                 </div>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
                   {(sectorsByType.get(type) ?? []).map((sector) => {
                     const isUserRoom = userRoom && sector.name === userRoom;
                     const roomLevel: FatigueLevel = isUserRoom && userLevel !== 'none' ? userLevel : 'normal';
@@ -214,15 +214,15 @@ export default async function HeatmapPage() {
                       <div
                         key={sector.id}
                         className={cn(
-                          'aspect-square rounded-md flex flex-col items-center justify-center gap-0.5 shadow-sm cursor-pointer hover:opacity-80 transition-opacity relative',
-                          isUserRoom ? 'ring-2 ring-white ring-offset-1 ring-offset-blue-500' : '',
+                          'aspect-square rounded-xl md:rounded-2xl flex flex-col items-center justify-center gap-1 p-2 shadow-sm cursor-pointer hover:opacity-80 transition-all hover:scale-[1.02] relative',
+                          isUserRoom ? 'ring-4 ring-white ring-offset-2 ring-offset-[#003087]' : '',
                           levelColor(roomLevel),
                         )}
                       >
                         {isUserRoom && (
-                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border border-white" />
+                          <div className="absolute -top-1.5 -right-1.5 w-4 h-4 md:w-5 md:h-5 bg-[#003087] rounded-full border-2 border-white shadow-sm" />
                         )}
-                        <span className="text-[7px] font-bold text-white/90 text-center leading-tight px-0.5 line-clamp-2">
+                        <span className="text-[10px] sm:text-xs md:text-sm font-bold text-white text-center leading-tight line-clamp-3 md:line-clamp-none">
                           {sector.name}
                         </span>
                       </div>
@@ -235,28 +235,28 @@ export default async function HeatmapPage() {
         ) : (
           <>
             {/* Modo demo — datos UAI realistas para presentación */}
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{universityName}</span>
-              <span className="text-[10px] flex items-center gap-1 text-red-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-lg md:text-xl font-bold text-[#0a1628]">{universityName}</span>
+              <span className="text-xs md:text-sm font-bold flex items-center gap-1.5 text-red-500">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse inline-block" />
                 En vivo
               </span>
             </div>
             {demoGroups.map((group) => (
-              <div key={group.type} className="mb-5 last:mb-0">
-                <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+              <div key={group.type} className="mb-8 last:mb-0">
+                <p className="text-xs md:text-sm font-bold text-[#7a8fb0] uppercase tracking-wider mb-3 md:mb-4">
                   {group.type}
                 </p>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
                   {group.rooms.map((r) => (
                     <div
                       key={r.name}
                       className={cn(
-                        'aspect-square rounded-md flex items-center justify-center shadow-sm cursor-pointer hover:opacity-80 transition-opacity',
+                        'aspect-square rounded-xl md:rounded-2xl flex items-center justify-center p-2 shadow-sm cursor-pointer hover:opacity-80 transition-all hover:scale-[1.02]',
                         levelColor(r.level),
                       )}
                     >
-                      <span className="text-[7px] font-bold text-white/90 text-center leading-tight px-1 line-clamp-2">
+                      <span className="text-[10px] sm:text-xs md:text-sm font-bold text-white text-center leading-tight line-clamp-3 md:line-clamp-none">
                         {r.name}
                       </span>
                     </div>
@@ -268,29 +268,29 @@ export default async function HeatmapPage() {
         )}
 
         {/* Leyenda */}
-        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-[10px] text-gray-400">
+        <div className="mt-8 pt-5 border-t border-[#e2e8f4] flex items-center justify-between text-xs md:text-sm font-bold text-[#7a8fb0]">
           <span>Bajo</span>
-          <div className="flex gap-0.5 items-center">
-            <div className="w-4 h-2 rounded-sm bg-green-500" />
-            <div className="w-4 h-2 rounded-sm bg-orange-500" />
-            <div className="w-4 h-2 rounded-sm bg-red-500" />
-            <div className="w-4 h-2 rounded-sm bg-red-700" />
+          <div className="flex gap-1 md:gap-1.5 items-center">
+            <div className="w-6 h-3 md:w-8 md:h-4 rounded-sm md:rounded-md bg-green-500 shadow-sm" />
+            <div className="w-6 h-3 md:w-8 md:h-4 rounded-sm md:rounded-md bg-amber-500 shadow-sm" />
+            <div className="w-6 h-3 md:w-8 md:h-4 rounded-sm md:rounded-md bg-red-500 shadow-sm" />
+            <div className="w-6 h-3 md:w-8 md:h-4 rounded-sm md:rounded-md bg-red-700 shadow-sm" />
           </div>
           <span>Crítico</span>
         </div>
 
         {userRoom && (
-          <div className="mt-3 flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-            <div className="w-3 h-3 rounded-full bg-blue-500 ring-2 ring-white flex-shrink-0" />
-            <span className="text-[10px] text-blue-600 dark:text-blue-400">Tu sala habitual: {userRoom}</span>
+          <div className="mt-5 flex items-center gap-3 p-3 md:p-4 bg-[#e8f0fb] rounded-xl border border-[#cddaf5]">
+            <div className="w-4 h-4 rounded-full bg-[#003087] ring-4 ring-white flex-shrink-0 shadow-sm" />
+            <span className="text-xs md:text-sm font-bold text-[#003087]">Tu sala habitual: {userRoom}</span>
           </div>
         )}
       </section>
 
       {/* Nota informativa */}
-      <div className="flex items-start gap-2 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800">
-        <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-        <p className="text-[10px] text-gray-500 leading-relaxed">
+      <div className="flex items-start gap-3 p-4 md:p-5 bg-[#f8fafd] rounded-2xl border border-[#e2e8f4]">
+        <MapPin className="w-5 h-5 text-[#7a8fb0] mt-0.5 flex-shrink-0" />
+        <p className="text-xs md:text-sm text-[#3a4a6b] font-medium leading-relaxed">
           El mapa muestra los niveles de fatiga en tiempo real. Los colores se actualizan cada 30 segundos durante las sesiones activas.
           {!userRoom && ' Configura tu sala habitual en Ajustes para verte destacado.'}
         </p>

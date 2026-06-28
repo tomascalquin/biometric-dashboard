@@ -1,15 +1,15 @@
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0f1923] text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen bg-[#f8fafd] text-[#0a1628]">
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Política de Privacidad</h1>
-          <p className="text-gray-500 dark:text-gray-400">Vigente desde: 22 de junio de 2026</p>
+          <h1 className="text-4xl font-bold mb-2 text-[#003087]">Política de Privacidad</h1>
+          <p className="text-[#7a8fb0] font-semibold">Vigente desde: 22 de junio de 2026</p>
         </div>
 
         {/* Content */}
-        <div className="space-y-8 text-gray-700 dark:text-gray-300">
+        <div className="space-y-8 text-[#3a4a6b]">
           {/* Section 1 */}
           <section>
             <h2 className="text-2xl font-bold mb-4">1. Introducción</h2>
@@ -150,7 +150,7 @@ export default function PrivacyPolicyPage() {
             <p className="leading-relaxed mb-2">
               Si tienes preguntas sobre esta Política de Privacidad, contacta a:
             </p>
-            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg space-y-1">
+            <div className="bg-white border border-[#e2e8f4] p-4 rounded-lg space-y-1">
               <p><strong>Email:</strong> privacy@biometricos.cl</p>
               <p><strong>Dirección:</strong> Campus Peñalolén, Santiago, Chile</p>
               <p><strong>Teléfono:</strong> +56 9 2345-6789</p>
@@ -159,7 +159,7 @@ export default function PrivacyPolicyPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
+        <div className="mt-12 pt-8 border-t border-[#e2e8f4] text-sm font-semibold text-[#7a8fb0]">
           <p>© 2026 BiometricOS. Todos los derechos reservados.</p>
           <p className="mt-2">Última actualización: 22 de junio de 2026</p>
         </div>

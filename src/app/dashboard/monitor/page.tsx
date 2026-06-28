@@ -534,9 +534,9 @@ export default function MonitorPage() {
     : {};
 
   const fatigueBadge: Record<FatigueLevel, { label: string; cls: string }> = {
-    normal:   { label: 'Normal',           cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
-    warning:  { label: 'Fatiga Moderada',  cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
-    critical: { label: 'Fatiga Crítica',   cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+    normal:   { label: 'Normal',           cls: 'bg-[#e8f0fb] text-[#003087]' },
+    warning:  { label: 'Fatiga Moderada',  cls: 'bg-amber-100 text-amber-700' },
+    critical: { label: 'Fatiga Crítica',   cls: 'bg-red-100 text-red-700' },
   };
 
   return (
@@ -547,29 +547,29 @@ export default function MonitorPage() {
 
         {/* Header título */}
         <div>
-          <h1 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 tracking-widest uppercase mb-0.5">
+          <h1 className="text-[10px] font-bold text-[#7a8fb0] tracking-widest uppercase mb-0.5">
             Monitor Biométrico
           </h1>
-          <p className="text-[10px] text-gray-400">
+          <p className="text-[10px] text-[#b0bdd6]">
             Analizando EAR y BPM · Activo
           </p>
         </div>
 
         {/* Área de cámara */}
-        <div className="relative rounded-2xl overflow-hidden bg-gray-900 w-full aspect-[4/3] flex items-center justify-center shadow-lg">
+        <div className="relative rounded-2xl overflow-hidden bg-[#0a1628] w-full aspect-[4/3] flex items-center justify-center shadow-lg">
           {!isRunning && !isLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white">
               <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
                 <span className="text-3xl">👁️</span>
               </div>
-              <p className="text-sm text-gray-400">Cámara inactiva</p>
+              <p className="text-sm text-[#b0bdd6]">Cámara inactiva</p>
             </div>
           )}
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
+            <div className="absolute inset-0 flex items-center justify-center bg-[#0a1628] z-10">
               <div className="flex flex-col items-center gap-3 text-white">
                 <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm text-gray-400">Cargando MediaPipe…</p>
+                <p className="text-sm text-[#b0bdd6]">Cargando MediaPipe…</p>
               </div>
             </div>
           )}
@@ -585,8 +585,8 @@ export default function MonitorPage() {
           />
           {/* Contador regresivo durante demo */}
           {demoRunning && (
-            <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-sm rounded-2xl px-3 py-2 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+            <div className="absolute top-3 left-3 bg-[#0a1628]/80 backdrop-blur-sm rounded-2xl px-3 py-2 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#003087] animate-pulse" />
               <span className="text-white text-xs font-bold">Demo · {demoCountdown}s</span>
             </div>
           )}
@@ -607,8 +607,8 @@ export default function MonitorPage() {
 
         {/* Error */}
         {error && (
-          <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3">
-            <p className="text-xs text-red-700 dark:text-red-300">{error}</p>
+          <div className="rounded-xl bg-red-50 border border-red-200 p-3">
+            <p className="text-xs text-red-700 font-semibold">{error}</p>
           </div>
         )}
 
@@ -618,7 +618,7 @@ export default function MonitorPage() {
             id="btn-start-monitor"
             onClick={startMonitor}
             disabled={isLoading}
-            className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-md"
+            className="w-full py-4 rounded-2xl bg-[#003087] hover:bg-[#002070] active:scale-[0.98] disabled:opacity-50 text-white font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-md"
           >
             {isLoading ? (
               <>
@@ -633,7 +633,7 @@ export default function MonitorPage() {
           <button
             id="btn-stop-monitor"
             onClick={stopMonitor}
-            className="w-full py-4 rounded-2xl bg-gray-800 hover:bg-gray-700 active:scale-[0.98] text-white font-semibold text-sm transition-all shadow-md"
+            className="w-full py-4 rounded-2xl bg-[#e2e8f4] hover:bg-[#cddaf5] active:scale-[0.98] text-[#0a1628] font-bold text-sm transition-all shadow-md"
           >
             ⏹ Detener Monitor
           </button>
@@ -644,15 +644,15 @@ export default function MonitorPage() {
           <button
             id="btn-demo-session"
             onClick={startDemo}
-            className="w-full py-3.5 rounded-2xl border-2 border-violet-500 text-violet-600 dark:text-violet-400 font-semibold text-sm hover:bg-violet-50 dark:hover:bg-violet-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-2xl border-2 border-[#003087] text-[#003087] font-semibold text-sm hover:bg-[#e8f0fb] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
             ⚡ Demo sesión (30 seg)
           </button>
         )}
         {demoRunning && (
-          <div className="w-full py-3.5 rounded-2xl bg-violet-600/10 border-2 border-violet-500 flex items-center justify-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-violet-500 animate-pulse" />
-            <span className="text-sm font-semibold text-violet-400">Demo en progreso…</span>
+          <div className="w-full py-3.5 rounded-2xl bg-[#e8f0fb] border-2 border-[#003087] flex items-center justify-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-[#003087] animate-pulse" />
+            <span className="text-sm font-semibold text-[#003087]">Demo en progreso…</span>
           </div>
         )}
 
@@ -661,7 +661,7 @@ export default function MonitorPage() {
           <button
             id="btn-simulate-critical"
             onClick={simulateCritical}
-            className="w-full py-3.5 rounded-2xl border-2 border-red-500 text-red-600 dark:text-red-400 font-semibold text-sm hover:bg-red-50 dark:hover:bg-red-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-2xl border-2 border-red-500 text-red-600 font-semibold text-sm hover:bg-red-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
             <AlertTriangle className="w-4 h-4" />
             Simular Fatiga Crítica
@@ -671,17 +671,17 @@ export default function MonitorPage() {
         {/* Resultado Demo — modal centrado, sin necesidad de scroll */}
         {demoResult && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a1628]/70 backdrop-blur-sm"
             onClick={closeDemo}
           >
             <div
-              className="relative w-full max-w-xs bg-white dark:bg-[#1a2332] rounded-3xl shadow-2xl border border-white/10"
+              className="relative w-full max-w-xs bg-white rounded-3xl shadow-2xl border border-[#e2e8f4]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Botón cerrar — siempre visible arriba a la derecha */}
               <button
                 onClick={closeDemo}
-                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors z-10"
+                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-[#e2e8f4] flex items-center justify-center text-[#7a8fb0] hover:text-[#0a1628] transition-colors z-10"
                 aria-label="Cerrar"
               >
                 ✕
@@ -690,40 +690,40 @@ export default function MonitorPage() {
               <div className="p-5 space-y-4">
                 <div className="text-center pr-6">
                   <div className="text-3xl mb-1">📊</div>
-                  <h2 className="text-sm font-black text-gray-900 dark:text-white">Resultado de sesión</h2>
-                  <p className="text-[10px] text-gray-400">Duración: 30 seg · Demo</p>
+                  <h2 className="text-sm font-black text-[#0a1628]">Resultado de sesión</h2>
+                  <p className="text-[10px] text-[#7a8fb0]">Duración: 30 seg · Demo</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <div className={`bg-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-50 dark:bg-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-900/20 rounded-2xl p-3 text-center border border-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-200 dark:border-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-800`}>
-                    <p className={`text-[9px] text-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-600 dark:text-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-400 font-bold uppercase tracking-wider`}>Estado</p>
-                    <p className={`text-sm font-black text-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-700 dark:text-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-300 mt-1`}>
+                  <div className={`bg-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-50 rounded-2xl p-3 text-center border border-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-200`}>
+                    <p className={`text-[9px] text-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-600 font-bold uppercase tracking-wider`}>Estado</p>
+                    <p className={`text-sm font-black text-${demoResult.level === 'critical' ? 'red' : demoResult.level === 'warning' ? 'amber' : 'green'}-700 mt-1`}>
                       {demoResult.level === 'critical' ? '🚨 Crítico' : demoResult.level === 'warning' ? '⚠️ Warning' : '✅ Normal'}
                     </p>
                   </div>
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-3 text-center border border-blue-200 dark:border-blue-800">
-                    <p className="text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">BPM prom.</p>
-                    <p className="text-2xl font-black text-blue-700 dark:text-blue-300 mt-1">{demoResult.bpm}</p>
+                  <div className="bg-[#e8f0fb] rounded-2xl p-3 text-center border border-[#cddaf5]">
+                    <p className="text-[9px] text-[#003087] font-bold uppercase tracking-wider">BPM prom.</p>
+                    <p className="text-2xl font-black text-[#003087] mt-1">{demoResult.bpm}</p>
                   </div>
-                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-3 text-center border border-gray-200 dark:border-gray-700">
-                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">EAR prom.</p>
-                    <p className="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">{demoResult.ear}</p>
+                  <div className="bg-[#f8fafd] rounded-2xl p-3 text-center border border-[#e2e8f4]">
+                    <p className="text-[9px] text-[#7a8fb0] font-bold uppercase tracking-wider">EAR prom.</p>
+                    <p className="text-2xl font-black text-[#0a1628] mt-1">{demoResult.ear}</p>
                   </div>
-                  <div className="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-3 text-center border border-gray-200 dark:border-gray-700">
-                    <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Parpadeos</p>
-                    <p className="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">{demoResult.blinks}</p>
+                  <div className="bg-[#f8fafd] rounded-2xl p-3 text-center border border-[#e2e8f4]">
+                    <p className="text-[9px] text-[#7a8fb0] font-bold uppercase tracking-wider">Parpadeos</p>
+                    <p className="text-2xl font-black text-[#0a1628] mt-1">{demoResult.blinks}</p>
                   </div>
                 </div>
 
-                <div className={`rounded-2xl p-3 border ${demoResult.level === 'critical' ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' : demoResult.level === 'warning' ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800' : 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'}`}>
-                  <p className={`text-[10px] text-center leading-relaxed ${demoResult.level === 'critical' ? 'text-red-700 dark:text-red-300' : demoResult.level === 'warning' ? 'text-amber-700 dark:text-amber-300' : 'text-green-700 dark:text-green-300'}`}>
+                <div className={`rounded-2xl p-3 border ${demoResult.level === 'critical' ? 'bg-red-50 border-red-200' : demoResult.level === 'warning' ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
+                  <p className={`text-[10px] text-center leading-relaxed font-semibold ${demoResult.level === 'critical' ? 'text-red-700' : demoResult.level === 'warning' ? 'text-amber-700' : 'text-green-700'}`}>
                     {demoResult.level === 'critical' ? '🚨 Fatiga severa detectada. Riesgo inminente. El sistema activó luz cálida.' : demoResult.level === 'warning' ? '⚠️ Fatiga moderada. Se sugiere tomar un descanso pronto.' : '✅ Tus niveles de energía son óptimos. Sigue así.'}
                   </p>
                 </div>
 
                 <button
                   onClick={closeDemo}
-                  className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors"
+                  className="w-full py-3 rounded-2xl bg-[#003087] hover:bg-[#002070] text-white font-bold text-sm transition-colors"
                 >
                   Cerrar
                 </button>
@@ -746,19 +746,19 @@ function MetricBox({ label, value, unit, isText, highlight, warn }: {
   warn?: boolean;
 }) {
   return (
-    <div className={`bg-white dark:bg-[#1a2332] rounded-2xl p-4 border shadow-sm transition-colors ${
-      highlight ? 'border-red-300 dark:border-red-800' :
-      warn      ? 'border-amber-300 dark:border-amber-800' :
-                  'border-gray-100 dark:border-gray-800'
+    <div className={`bg-white rounded-2xl p-4 border shadow-sm transition-colors ${
+      highlight ? 'border-red-300' :
+      warn      ? 'border-amber-300' :
+                  'border-[#e2e8f4]'
     }`}>
-      <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1.5 font-medium">{label}</p>
-      <p className={`font-bold leading-none ${isText ? 'text-base' : 'text-2xl'} ${
-        highlight ? 'text-red-600 dark:text-red-400' :
-        warn      ? 'text-amber-600 dark:text-amber-400' :
-                    'text-gray-900 dark:text-gray-100'
+      <p className="text-[10px] text-[#7a8fb0] mb-1.5 font-bold uppercase tracking-wider">{label}</p>
+      <p className={`font-black leading-none ${isText ? 'text-base' : 'text-2xl'} ${
+        highlight ? 'text-red-600' :
+        warn      ? 'text-amber-600' :
+                    'text-[#0a1628]'
       }`}>
         {value}
-        {unit && <span className="text-xs font-normal text-gray-500 ml-1">{unit}</span>}
+        {unit && <span className="text-xs font-semibold text-[#7a8fb0] ml-1">{unit}</span>}
       </p>
     </div>
   );

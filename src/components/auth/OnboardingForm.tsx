@@ -226,14 +226,14 @@ export function OnboardingForm({ userId }: { userId: string }) {
           return (
             <div key={n} className="flex items-center gap-1">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                n < step    ? 'bg-blue-600 text-white' :
-                n === step  ? 'bg-blue-600 text-white ring-4 ring-blue-600/20' :
-                              'bg-white/10 text-gray-500'
+                n < step    ? 'bg-[#003087] text-white' :
+                n === step  ? 'bg-[#003087] text-white ring-4 ring-[#003087]/20' :
+                              'bg-[#e2e8f4] text-[#7a8fb0]'
               }`}>
                 {n < step ? <CheckCircle className="w-4 h-4" /> : <s.icon className="w-4 h-4" />}
               </div>
               {i < STEPS.length - 1 && (
-                <div className={`w-6 h-0.5 rounded ${n < step ? 'bg-blue-600' : 'bg-white/10'}`} />
+                <div className={`w-6 h-0.5 rounded ${n < step ? 'bg-[#003087]' : 'bg-[#e2e8f4]'}`} />
               )}
             </div>
           );
@@ -243,7 +243,7 @@ export function OnboardingForm({ userId }: { userId: string }) {
       {/* ════ PASO 1 — Nombre ════ */}
       {step === 1 && (
         <div className="space-y-5">
-          <StepHeader icon={<User className="w-7 h-7 text-blue-400" />} title="Tu perfil" sub="¿Cómo te llamamos?" />
+          <StepHeader icon={<User className="w-7 h-7 text-white" />} title="Tu perfil" sub="¿Cómo te llamamos?" />
           <Field label="Nombre completo">
             <input id="ob-fullname" type="text" value={fullName}
               onChange={e => setFullName(e.target.value)}
@@ -262,7 +262,7 @@ export function OnboardingForm({ userId }: { userId: string }) {
       {/* ════ PASO 2 — Universidad + Campus ════ */}
       {step === 2 && (
         <div className="space-y-5">
-          <StepHeader icon={<GraduationCap className="w-7 h-7 text-blue-400" />} title="Tu institución" sub="¿En qué universidad estudias?" />
+          <StepHeader icon={<GraduationCap className="w-7 h-7 text-white" />} title="Tu institución" sub="¿En qué universidad estudias?" />
 
           {loadingUnis ? (
             <div className="flex flex-col items-center gap-3 py-8">
@@ -286,8 +286,8 @@ export function OnboardingForm({ userId }: { userId: string }) {
                   onClick={() => { setUniversityId(u.id); setCampus(''); }}
                   className={`w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center gap-3 ${
                     universityId === u.id
-                      ? 'bg-blue-600/20 border-blue-500 text-white'
-                      : 'border-white/10 bg-[#0f1923] text-gray-300 hover:border-white/20'
+                      ? 'bg-[#e8f0fb] border-[#003087] text-[#003087] shadow-sm'
+                      : 'border-[#e2e8f4] bg-white text-[#0a1628] hover:border-[#b0bdd6]'
                   }`}>
                   <span className="text-xl">{u.logo}</span>
                   <div className="flex-1 min-w-0">
@@ -325,7 +325,7 @@ export function OnboardingForm({ userId }: { userId: string }) {
       {/* ════ PASO 3 — Facultad + Carrera + Año ════ */}
       {step === 3 && (
         <div className="space-y-5">
-          <StepHeader icon={<BookOpen className="w-7 h-7 text-blue-400" />} title="Tu carrera" sub="Facultad, carrera y año" />
+          <StepHeader icon={<BookOpen className="w-7 h-7 text-white" />} title="Tu carrera" sub="Facultad, carrera y año" />
 
           {/* Facultad */}
           {loadingFacs ? (
@@ -357,8 +357,8 @@ export function OnboardingForm({ userId }: { userId: string }) {
                       onClick={() => setCareerId(c.id)}
                       className={`w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center gap-3 ${
                         careerId === c.id
-                          ? 'bg-blue-600/20 border-blue-500 text-white'
-                          : 'border-white/10 bg-[#0f1923] text-gray-300 hover:border-white/20'
+                          ? 'bg-[#e8f0fb] border-[#003087] text-[#003087] shadow-sm'
+                          : 'border-[#e2e8f4] bg-white text-[#0a1628] hover:border-[#b0bdd6]'
                       }`}>
                       {c.icon && <span className="text-lg">{c.icon}</span>}
                       <p className="text-sm font-medium flex-1">{c.name}</p>
@@ -385,8 +385,8 @@ export function OnboardingForm({ userId }: { userId: string }) {
                     onClick={() => setAcademicYear(i + 1)}
                     className={`rounded-xl py-2.5 text-xs font-semibold border transition-all ${
                       academicYear === i + 1
-                        ? 'bg-blue-600 border-blue-500 text-white'
-                        : 'border-white/10 bg-[#0f1923] text-gray-400 hover:border-white/20'
+                        ? 'bg-[#003087] border-[#003087] text-white shadow-sm'
+                        : 'border-[#e2e8f4] bg-white text-[#7a8fb0] hover:border-[#b0bdd6]'
                     }`}>
                     {label} año
                   </button>
@@ -410,7 +410,7 @@ export function OnboardingForm({ userId }: { userId: string }) {
       {/* ════ PASO 4 — Sector de estudio ════ */}
       {step === 4 && (
         <div className="space-y-5">
-          <StepHeader icon={<MapPin className="w-7 h-7 text-blue-400" />} title="Dónde estudias" sub="¿En qué sector o sala sueles estudiar?" />
+          <StepHeader icon={<MapPin className="w-7 h-7 text-white" />} title="Dónde estudias" sub="¿En qué sector o sala sueles estudiar?" />
 
           {loadingSectors ? (
             <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 text-blue-400 animate-spin" /></div>
@@ -431,8 +431,8 @@ export function OnboardingForm({ userId }: { userId: string }) {
                       onClick={() => setStudyRoom(s.name)}
                       className={`w-full text-left px-4 py-3 rounded-xl border transition-all flex items-center gap-3 ${
                         studyRoom === s.name
-                          ? 'bg-blue-600/20 border-blue-500 text-white'
-                          : 'border-white/10 bg-[#0f1923] text-gray-300 hover:border-white/20'
+                          ? 'bg-[#e8f0fb] border-[#003087] text-[#003087] shadow-sm'
+                          : 'border-[#e2e8f4] bg-white text-[#0a1628] hover:border-[#b0bdd6]'
                       }`}>
                       <p className="text-sm font-medium flex-1">{s.name}</p>
                       {studyRoom === s.name && <CheckCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />}
@@ -464,11 +464,11 @@ export function OnboardingForm({ userId }: { userId: string }) {
 function StepHeader({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
   return (
     <div className="text-center mb-6">
-      <div className="w-14 h-14 rounded-2xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center mx-auto mb-3">
+      <div className="w-14 h-14 rounded-2xl bg-[#003087] shadow-lg shadow-[#003087]/20 flex items-center justify-center mx-auto mb-3">
         {icon}
       </div>
-      <h2 className="text-lg font-bold text-white">{title}</h2>
-      <p className="text-xs text-gray-400 mt-1">{sub}</p>
+      <h2 className="text-lg font-bold text-[#0a1628]">{title}</h2>
+      <p className="text-xs text-[#7a8fb0] mt-1">{sub}</p>
     </div>
   );
 }
@@ -476,7 +476,7 @@ function StepHeader({ icon, title, sub }: { icon: React.ReactNode; title: string
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">{label}</label>
+      <label className="block text-[11px] font-bold text-[#7a8fb0] uppercase tracking-wider">{label}</label>
       {children}
     </div>
   );
@@ -485,9 +485,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function ErrMsg({ msg }: { msg: string | null }) {
   if (!msg) return null;
   return (
-    <div className="rounded-xl bg-red-900/30 border border-red-800/50 px-4 py-3 flex items-center gap-2">
-      <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-      <p className="text-sm text-red-400">{msg}</p>
+    <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2 shadow-sm">
+      <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+      <p className="text-sm text-red-600">{msg}</p>
     </div>
   );
 }
