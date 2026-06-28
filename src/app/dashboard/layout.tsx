@@ -60,7 +60,7 @@ export default async function DashboardLayout({
   const career = role === 'student' ? (profile?.careers as any)?.name ?? undefined : undefined;
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-gray-50 dark:bg-gray-950 overflow-hidden relative">
+    <div className="flex flex-col h-[100dvh] bg-[#f8fafd] overflow-hidden relative">
       {/* Cabecera superior */}
       <MobileTopBar name={name} role={role} subtitle={subtitle} career={career} />
       

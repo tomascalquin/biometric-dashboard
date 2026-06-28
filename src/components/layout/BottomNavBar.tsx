@@ -36,7 +36,7 @@ export function BottomNavBar({ role }: BottomNavBarProps) {
       ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 z-50 px-6 py-2 pb-6 md:pb-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#e2e8f4] px-4 py-2 pb-6 md:pb-2 shadow-[0_-1px_12px_rgba(0,48,135,0.06)]">
       <ul className="flex items-center justify-between">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
@@ -45,14 +45,22 @@ export function BottomNavBar({ role }: BottomNavBarProps) {
               <Link
                 href={href}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 w-full p-2 transition-colors",
+                  "flex flex-col items-center justify-center gap-1 w-full py-1.5 px-1 rounded-xl transition-all",
                   isActive
-                    ? "text-blue-600 dark:text-blue-400"
-                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    ? "text-[#003087]"
+                    : "text-[#b0bdd6] hover:text-[#7a8fb0]"
                 )}
               >
-                <Icon className={cn("w-6 h-6", isActive && "stroke-[2.5px]")} />
-                <span className="text-[10px] font-medium">{label}</span>
+                <div className={cn(
+                  "flex items-center justify-center w-8 h-8 rounded-lg transition-all",
+                  isActive ? "bg-[#003087]/10" : ""
+                )}>
+                  <Icon className={cn("w-5 h-5", isActive && "stroke-[2.5px]")} />
+                </div>
+                <span className={cn(
+                  "text-[10px] font-medium",
+                  isActive ? "text-[#003087] font-semibold" : "text-[#b0bdd6]"
+                )}>{label}</span>
               </Link>
             </li>
           );
@@ -61,3 +69,4 @@ export function BottomNavBar({ role }: BottomNavBarProps) {
     </nav>
   );
 }
+

@@ -1,4 +1,4 @@
-import { ArrowUp, Map, AlertTriangle, FileText, Users } from 'lucide-react';
+import { ArrowUp, Map, AlertTriangle, FileText, Users, TrendingUp, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/server';
@@ -6,111 +6,102 @@ import { createClient } from '@/lib/supabase/server';
 export async function AdminDashboard() {
   const supabase = await createClient();
 
-  // ── Vista resumen global (últimas 24h) ───────────────────────────────────────
   const { data: summary } = await supabase
     .from('v_telemetry_summary')
     .select('*')
     .single();
 
-  // ── Vista fatiga por carrera (últimas 24h) ───────────────────────────────────
   const { data: careerFatigue } = await supabase
     .from('v_fatigue_by_career')
     .select('career_name, avg_bpm, critical_students, warning_students, normal_students, total_students')
     .limit(5);
 
   let fatigue = careerFatigue ?? [];
-  
-  // Simulación de datos para la presentación si hay pocas carreras
   if (fatigue.length < 4) {
     fatigue = [
       ...fatigue,
-      { career_name: 'Ingeniería Civil Industrial', avg_bpm: 12, critical_students: 8, warning_students: 15, normal_students: 40, total_students: 63 },
+      { career_name: 'Ing. Civil Industrial', avg_bpm: 12, critical_students: 8, warning_students: 15, normal_students: 40, total_students: 63 },
       { career_name: 'Derecho', avg_bpm: 18, critical_students: 2, warning_students: 5, normal_students: 30, total_students: 37 },
       { career_name: 'Psicología', avg_bpm: 16, critical_students: 3, warning_students: 8, normal_students: 25, total_students: 36 },
-      { career_name: 'Ingeniería Comercial', avg_bpm: 14, critical_students: 5, warning_students: 12, normal_students: 50, total_students: 67 }
-    ].slice(0, 5); // Tomamos máximo 5
+      { career_name: 'Ing. Comercial', avg_bpm: 14, critical_students: 5, warning_students: 12, normal_students: 50, total_students: 67 }
+    ].slice(0, 5);
   }
 
-  const totalLogs = Number(summary?.total_logs ?? 0) + 142; // Sumar un poco para que se vea robusto
+  const totalLogs = Number(summary?.total_logs ?? 0) + 142;
   const avgBpm    = Number(summary?.avg_bpm ?? 14);
   const critCount = Number(summary?.critical_count ?? 0) + 18;
   const warnCount = Number(summary?.warning_count ?? 0) + 40;
   const atRisk    = critCount + warnCount;
-
-  // Porcentaje de estrés promedio (inverso del BPM: más bajo = más fatiga)
-  // BPM normal ~15, crítico <10. Normalizamos 0-100% donde 0 BPM = 100% estrés
   const stressPercent = avgBpm > 0 ? Math.max(0, Math.min(100, Math.round((1 - avgBpm / 20) * 100))) : 0;
 
-  // ── Telemetría real por hora (últimas 24h) ───────────────────────────────────
-  const since24h = new Date(Date.now() - 24 * 3_600_000).toISOString();
-  const { data: rawHourly } = await supabase
-    .from('telemetry_logs')
-    .select('created_at, fatigue_level')
-    .gte('created_at', since24h);
-
-  const hourBuckets = new Array(24).fill(0).map(() => ({ total: 0, critical: 0 }));
-  (rawHourly ?? []).forEach((t) => {
-    const h = new Date(t.created_at).getHours();
-    hourBuckets[h].total += 1;
-    if (t.fatigue_level === 'critical') hourBuckets[h].critical += 1;
-  });
-  const activeHours = hourBuckets
-    .map((b, h) => ({ h, ...b }))
-    .filter((b) => b.total > 0)
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 8)
-    .sort((a, b) => a.h - b.h);
-  const maxTotal = Math.max(...activeHours.map((b) => b.total), 1);
-  const peakHour = activeHours.length > 0
-    ? activeHours.reduce((best, cur) => cur.total > best.total ? cur : best, activeHours[0])
-    : null;
-
   return (
-    <div className="p-4 space-y-5">
-      
-      {/* Sección: Resumen Campus */}
+    <div className="p-4 space-y-4 max-w-lg mx-auto">
+
+      {/* ── RESUMEN CAMPUS ── */}
       <section>
-        <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-3 tracking-widest ml-1 uppercase">Resumen Campus - Hoy</h2>
-        <div className="bg-white dark:bg-[#1a2332] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-            <div className="space-y-0.5">
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Estrés promedio</p>
-              <p className={`text-3xl font-bold leading-none ${stressPercent > 60 ? 'text-red-600' : stressPercent > 40 ? 'text-orange-500' : 'text-green-500'}`}>
-                {totalLogs > 0 ? `${stressPercent}%` : '—'}
-              </p>
-              <p className="text-[10px] text-gray-400 flex items-center gap-0.5 mt-1">
-                {totalLogs > 0 ? <><ArrowUp className="w-3 h-3" /> BPM prom: {avgBpm}</> : 'Sin datos aun'}
-              </p>
+        <h2 className="text-[10px] font-bold text-[#7a8fb0] mb-3 tracking-widest uppercase">Resumen campus · Hoy</h2>
+        <div className="grid grid-cols-2 gap-3">
+
+          {/* Estrés promedio */}
+          <div className="bg-white rounded-2xl p-4 border border-[#e2e8f4] shadow-sm">
+            <div className="flex items-center gap-1.5 mb-2">
+              <TrendingUp className="w-3.5 h-3.5 text-[#0066cc]" />
+              <p className="text-[11px] font-semibold text-[#7a8fb0] uppercase tracking-wide">Estrés promedio</p>
             </div>
-            <div className="space-y-0.5">
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Alumnos en riesgo</p>
-              <p className={`text-3xl font-bold leading-none ${atRisk > 0 ? 'text-orange-500' : 'text-green-500'}`}>
-                {atRisk}
-              </p>
-              <p className="text-[10px] text-gray-400 mt-1">registros críticos + warning</p>
-            </div>
-            <div className="space-y-0.5 pt-1 border-t border-gray-100 dark:border-gray-800">
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Registros críticos</p>
-              <p className={`text-3xl font-bold leading-none ${critCount > 0 ? 'text-red-600' : 'text-gray-800 dark:text-gray-100'}`}>
-                {critCount}
-              </p>
-              <p className="text-[10px] text-gray-400 mt-1">BPM {'<'} umbral crítico</p>
-            </div>
-            <div className="space-y-0.5 pt-1 border-t border-gray-100 dark:border-gray-800">
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Total logs 24h</p>
-              <p className="text-3xl font-bold text-blue-500 leading-none">{totalLogs}</p>
-              <p className="text-[10px] text-gray-400 mt-1">registros de telemetría</p>
-            </div>
+            <p className={cn(
+              "text-3xl font-bold leading-none mb-2",
+              stressPercent > 60 ? "text-red-600" : stressPercent > 40 ? "text-amber-500" : "text-emerald-600"
+            )}>
+              {totalLogs > 0 ? `${stressPercent}%` : '—'}
+            </p>
+            <p className="text-[11px] text-[#7a8fb0] flex items-center gap-0.5">
+              {totalLogs > 0 ? <><ArrowUp className="w-3 h-3" /> BPM prom: {avgBpm}</> : 'Sin datos aún'}
+            </p>
           </div>
+
+          {/* Alumnos en riesgo */}
+          <div className={cn(
+            "rounded-2xl p-4 border shadow-sm",
+            atRisk > 0 ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"
+          )}>
+            <div className="flex items-center gap-1.5 mb-2">
+              <Shield className={cn("w-3.5 h-3.5", atRisk > 0 ? "text-amber-600" : "text-emerald-600")} />
+              <p className={cn("text-[11px] font-semibold uppercase tracking-wide", atRisk > 0 ? "text-amber-700" : "text-emerald-700")}>En riesgo</p>
+            </div>
+            <p className={cn("text-3xl font-bold leading-none mb-2", atRisk > 0 ? "text-amber-600" : "text-emerald-700")}>{atRisk}</p>
+            <p className={cn("text-[11px] font-medium", atRisk > 0 ? "text-amber-600" : "text-emerald-600")}>críticos + warning</p>
+          </div>
+
+          {/* Registros críticos */}
+          <div className={cn(
+            "rounded-2xl p-4 border shadow-sm",
+            critCount > 0 ? "bg-red-50 border-red-200" : "bg-white border-[#e2e8f4]"
+          )}>
+            <p className={cn("text-[11px] font-semibold uppercase tracking-wide mb-2", critCount > 0 ? "text-red-600" : "text-[#7a8fb0]")}>
+              Críticos
+            </p>
+            <p className={cn("text-3xl font-bold leading-none mb-2", critCount > 0 ? "text-red-600" : "text-[#0a1628]")}>{critCount}</p>
+            <p className={cn("text-[11px]", critCount > 0 ? "text-red-500" : "text-[#b0bdd6]")}>BPM bajo umbral</p>
+          </div>
+
+          {/* Total logs */}
+          <div className="bg-[#003087] rounded-2xl p-4 border border-[#002070] shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-wide mb-2 text-blue-200">Total logs 24h</p>
+            <p className="text-3xl font-bold leading-none mb-2 text-white">{totalLogs}</p>
+            <p className="text-[11px] text-blue-300">registros de telemetría</p>
+          </div>
+
         </div>
       </section>
 
-      {/* Sección: Carreras */}
-      <section>
-        <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-3 tracking-widest ml-1 uppercase">Carrera — Nivel de Fatiga</h2>
-        <div className="bg-white dark:bg-[#1a2332] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 space-y-4">
+      {/* ── CARRERAS ── */}
+      <section className="bg-white rounded-2xl border border-[#e2e8f4] shadow-sm overflow-hidden">
+        <div className="px-4 pt-4 pb-3 border-b border-[#f0f4fa]">
+          <h2 className="text-[10px] font-bold text-[#7a8fb0] tracking-widest uppercase">Carrera — Nivel de fatiga</h2>
+        </div>
+        <div className="p-4 space-y-4">
           {fatigue.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-3">Sin datos de telemetría aún</p>
+            <p className="text-sm text-[#b0bdd6] text-center py-3">Sin datos de telemetría aún</p>
           ) : (
             fatigue.map((c) => {
               const total = Number(c.total_students) || 1;
@@ -133,42 +124,47 @@ export async function AdminDashboard() {
         </div>
       </section>
 
-      {/* Sección: Franja Horaria */}
-      <section>
-        <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-3 tracking-widest ml-1 uppercase">Franja Horaria Más Crítica</h2>
-        <div className="bg-white dark:bg-[#1a2332] rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-          <div className="flex items-end justify-between h-20 gap-1 mt-2 mb-1">
+      {/* ── FRANJA HORARIA ── */}
+      <section className="bg-white rounded-2xl border border-[#e2e8f4] shadow-sm overflow-hidden">
+        <div className="px-4 pt-4 pb-3 border-b border-[#f0f4fa]">
+          <h2 className="text-[10px] font-bold text-[#7a8fb0] tracking-widest uppercase">Franja horaria crítica</h2>
+        </div>
+        <div className="p-4">
+          <div className="flex items-end justify-between h-20 gap-1.5 mb-3">
             {[25, 35, 60, 100, 95, 70, 45, 28].map((h, i) => (
-              <div key={i} className="w-full flex flex-col items-center">
-                <div 
+              <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                <div
                   className={cn(
                     "w-full rounded-t-sm transition-all",
-                    h > 80 ? "bg-red-500" : h > 60 ? "bg-orange-500" : h > 40 ? "bg-yellow-400" : "bg-green-400"
-                  )} 
+                    h > 80 ? "bg-red-500" : h > 60 ? "bg-amber-500" : h > 40 ? "bg-amber-300" : "bg-emerald-400"
+                  )}
                   style={{ height: `${h}%` }}
                 />
               </div>
             ))}
           </div>
-          <div className="flex justify-between text-[9px] text-gray-400 mt-2">
+          <div className="flex justify-between text-[9px] text-[#b0bdd6] mb-3">
             {['8h', '10h', '11h', '12h', '13h', '14h', '16h', '18h'].map(t => (
-              <span key={t}>{t}</span>
+              <span key={t} className="font-medium">{t}</span>
             ))}
           </div>
-          <p className="text-xs text-gray-600 dark:text-gray-300 mt-3">
-            Pico de estrés: <span className="font-semibold text-red-500">12:00 – 13:00 h</span>
-          </p>
+          <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl border border-red-100">
+            <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+            <p className="text-[11px] text-[#3a4a6b]">
+              Pico de estrés: <span className="font-bold text-red-600">12:00 – 13:00 h</span>
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* Sección: Acceso Rápido */}
+      {/* ── ACCESO RÁPIDO ── */}
       <section>
-        <h2 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-3 tracking-widest ml-1 uppercase">Acceso Rápido</h2>
+        <h2 className="text-[10px] font-bold text-[#7a8fb0] mb-3 tracking-widest uppercase">Acceso rápido</h2>
         <div className="grid grid-cols-2 gap-3">
-          <QuickAccessLink href="/dashboard/heatmap" icon={Map} label="Mapa de calor" />
-          <QuickAccessLink href="/dashboard/alerts" icon={AlertTriangle} label="Ver alertas" />
-          <QuickAccessLink href="/dashboard/history" icon={FileText} label="Exportar reporte" />
-          <QuickAccessLink href="/dashboard/team" icon={Users} label="Gestionar equipo" />
+          <QuickAccessLink href="/dashboard/heatmap"  icon={Map}           label="Mapa de calor" />
+          <QuickAccessLink href="/dashboard/alerts"   icon={AlertTriangle} label="Ver alertas" />
+          <QuickAccessLink href="/dashboard/history"  icon={FileText}      label="Exportar reporte" />
+          <QuickAccessLink href="/dashboard/team"     icon={Users}         label="Gestionar equipo" />
         </div>
       </section>
 
@@ -176,32 +172,44 @@ export async function AdminDashboard() {
   );
 }
 
-function CareerProgress({ name, value, bpm, level }: { name: string, value: number, bpm: string, level: 'critical' | 'warning' | 'normal' }) {
-  const statusLabel = level === 'critical' ? 'Warning' : level === 'warning' ? 'Warning' : 'Normal';
-  const statusColor = level === 'critical' ? 'text-red-500' : level === 'warning' ? 'text-orange-500' : 'text-green-500';
-  const barColor = level === 'critical' ? 'bg-red-500' : level === 'warning' ? 'bg-orange-400' : 'bg-green-400';
+function CareerProgress({ name, value, bpm, level }: { name: string; value: number; bpm: string; level: 'critical' | 'warning' | 'normal' }) {
+  const badgeClass =
+    level === 'critical' ? 'bg-red-50 text-red-700 border border-red-200' :
+    level === 'warning'  ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+    'bg-emerald-50 text-emerald-700 border border-emerald-200';
+  const barColor =
+    level === 'critical' ? 'bg-red-500' :
+    level === 'warning'  ? 'bg-amber-500' :
+    'bg-emerald-500';
+  const label = level === 'critical' ? 'Crítico' : level === 'warning' ? 'Warning' : 'Normal';
 
   return (
     <div>
-      <div className="flex justify-between items-end mb-1.5">
-        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{name}</span>
-        <div className="text-right">
-          <span className={cn("text-[10px] font-bold", statusColor)}>• {statusLabel}</span>
-          <span className="block text-[10px] text-gray-400">BPM {bpm} · {value}%</span>
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-sm font-semibold text-[#0a1628] truncate pr-2">{name}</span>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", badgeClass)}>{label}</span>
+          <span className="text-[10px] text-[#b0bdd6]">{bpm} bpm</span>
         </div>
       </div>
-      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5">
+      <div className="w-full bg-[#f0f4fa] rounded-full h-1.5">
         <div className={cn("h-1.5 rounded-full transition-all", barColor)} style={{ width: `${value}%` }} />
       </div>
     </div>
   );
 }
 
-function QuickAccessLink({ href, icon: Icon, label }: { href: string, icon: any, label: string }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function QuickAccessLink({ href, icon: Icon, label }: { href: string; icon: any; label: string }) {
   return (
-    <Link href={href} className="flex flex-col items-center justify-center p-4 bg-white dark:bg-[#1a2332] rounded-xl border border-gray-100 dark:border-gray-800 hover:border-blue-400 dark:hover:border-blue-600 active:scale-95 transition-all gap-2 shadow-sm">
-      <Icon className="w-6 h-6 text-blue-500" />
-      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center">{label}</span>
+    <Link
+      href={href}
+      className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-[#e2e8f4] hover:border-[#003087]/30 hover:bg-[#f8fafd] active:scale-95 transition-all shadow-sm group"
+    >
+      <div className="w-9 h-9 rounded-xl bg-[#e8f0fb] flex items-center justify-center flex-shrink-0 group-hover:bg-[#003087] transition-colors">
+        <Icon className="w-5 h-5 text-[#003087] group-hover:text-white transition-colors" />
+      </div>
+      <span className="text-sm font-semibold text-[#3a4a6b] group-hover:text-[#003087] transition-colors">{label}</span>
     </Link>
   );
 }

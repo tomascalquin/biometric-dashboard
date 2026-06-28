@@ -9,13 +9,17 @@ import type { FatigueLevel } from '@/types/telemetry';
 const RIGHT_EYE = [33, 160, 158, 133, 153, 144];
 const LEFT_EYE  = [362, 385, 387, 263, 373, 380];
 
-// ─── Constantes de fatiga ────────────────────────────────────────────────────
-const EAR_THRESHOLD          = 0.25;
-const BLINK_CONSEC_FRAMES    = 3;
-const BPM_CRITICAL_THRESHOLD = 10;
-const BPM_WARNING_THRESHOLD  = 15;
-const LOG_INTERVAL_MS        = 10_000;  // Registrar cada 10s para más datos por sesión
+// ─── Constantes del sistema biométrico ────────────────────────────────────────
+const BLINK_CONSEC_FRAMES    = 2;       // Frames consecutivos para confirmar parpadeo
+const BLINK_REFRACTORY_MS    = 150;     // Tiempo mínimo entre parpadeos — evita doble-detección
+const BPM_CRITICAL_THRESHOLD = 8;       // < 8 bpm = fatiga crítica
+const BPM_WARNING_THRESHOLD  = 14;      // < 14 bpm = fatiga moderada
+const EAR_MICROSLEEP_THRESH  = 0.15;    // EAR < 0.15 = ojo muy cerrado
+const EAR_MICROSLEEP_FRAMES  = 25;      // ~1 seg con ojo cerrado = microsueño
+const LOG_INTERVAL_MS        = 10_000;
 const BPM_WINDOW_MS          = 60_000;
+const CALIBRATION_FRAMES     = 60;      // Primeros ~2s para calibrar EAR base
+const EAR_SMOOTH_FRAMES      = 5;       // Buffer de suavizado anti-jitter
 
 interface Landmark { x: number; y: number; z: number; }
 
@@ -32,27 +36,50 @@ function computeEAR(landmarks: Landmark[], indices: number[]): number {
   return (vertical1 + vertical2) / (2.0 * horizontal);
 }
 
-function classifyFatigue(bpm: number): FatigueLevel {
-  if (bpm < BPM_CRITICAL_THRESHOLD) return 'critical';
-  if (bpm < BPM_WARNING_THRESHOLD)  return 'warning';
+// Clasificación multi-señal: BPM + EAR promedio + microsueños
+function classifyFatigue(
+  bpm: number,
+  avgEAR: number,
+  adaptiveThreshold: number,
+  microsleepCount: number,
+): FatigueLevel {
+  if (microsleepCount > 0)                               return 'critical'; // microsueño = crítico
+  if (avgEAR > 0 && avgEAR < adaptiveThreshold * 0.65)  return 'critical'; // ojo muy cerrado
+  if (bpm > 0 && bpm < BPM_CRITICAL_THRESHOLD)          return 'critical'; // BPM muy bajo
+  if (avgEAR > 0 && avgEAR < adaptiveThreshold * 0.80)  return 'warning';  // ojo moderadamente cerrado
+  if (bpm > 0 && bpm < BPM_WARNING_THRESHOLD)           return 'warning';  // BPM bajo
   return 'normal';
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function MonitorPage() {
-  const videoRef        = useRef<HTMLVideoElement>(null);
-  const canvasRef       = useRef<HTMLCanvasElement>(null);
-  const streamRef       = useRef<MediaStream | null>(null);
-  const faceMeshRef     = useRef<any>(null);
-  const cameraRef       = useRef<any>(null);
-  const blinkTimestamps = useRef<number[]>([]);
-  const blinkCounter    = useRef(0);
-  const earBelowCount   = useRef(0);
-  const lastLogTime     = useRef(0);
-  const lastUIUpdate    = useRef(0);
-  const sessionId       = useRef(crypto.randomUUID());
-  const animFrameRef    = useRef<number>(0);
+  const videoRef         = useRef<HTMLVideoElement>(null);
+  const canvasRef        = useRef<HTMLCanvasElement>(null);
+  const streamRef        = useRef<MediaStream | null>(null);
+  const faceMeshRef      = useRef<any>(null);
+  const cameraRef        = useRef<any>(null);
+  const blinkTimestamps  = useRef<number[]>([]);
+  const blinkCounter     = useRef(0);
+  const earBelowCount    = useRef(0);
+  const lastLogTime      = useRef(0);
+  const lastUIUpdate     = useRef(0);
+  const lastBlinkTime    = useRef(0);           // Para refractario
+  const sessionId        = useRef(crypto.randomUUID());
+  const animFrameRef     = useRef<number>(0);
   const currentValuesRef = useRef({ earL: 0, earR: 0, bpm: 0, level: 'normal' as FatigueLevel, blueLight: false });
+
+  // ── Calibración adaptativa del EAR ─────────────────────────────────
+  const calibrationBuffer  = useRef<number[]>([]);  // EAR samples durante calibración
+  const adaptiveThreshold  = useRef(0.25);           // Umbral adaptativo
+  const isCalibrated       = useRef(false);
+  const frameCount         = useRef(0);
+
+  // ── Suavizado EAR anti-jitter ────────────────────────────────────
+  const earSmoothBuffer    = useRef<number[]>([]);
+
+  // ── Detección de microsueños ───────────────────────────────────
+  const microsleepFrames   = useRef(0);   // Frames consecutivos con ojo muy cerrado
+  const microsleepCount    = useRef(0);   // Total de microsueños detectados
 
   const [isRunning,       setIsRunning]       = useState(false);
   const [isLoading,       setIsLoading]       = useState(false);
@@ -141,43 +168,86 @@ export default function MonitorPage() {
       const landmarks: Landmark[] = results.multiFaceLandmarks[0];
       const earL   = computeEAR(landmarks, LEFT_EYE);
       const earR   = computeEAR(landmarks, RIGHT_EYE);
-      const avgEAR = (earL + earR) / 2;
+      const rawAvg = (earL + earR) / 2;
+
+      // ── Suavizado EAR con buffer deslizante ─────────────────────────
+      earSmoothBuffer.current.push(rawAvg);
+      if (earSmoothBuffer.current.length > EAR_SMOOTH_FRAMES)
+        earSmoothBuffer.current.shift();
+      const avgEAR = earSmoothBuffer.current.reduce((a, b) => a + b, 0) / earSmoothBuffer.current.length;
 
       setEarLeft(Math.round(earL * 1000) / 1000);
       setEarRight(Math.round(earR * 1000) / 1000);
+      frameCount.current += 1;
 
-      if (avgEAR < EAR_THRESHOLD) {
+      // ── FASE 1: Calibración adaptativa del umbral EAR ────────────────
+      if (!isCalibrated.current) {
+        if (rawAvg > 0.15) calibrationBuffer.current.push(rawAvg); // Solo ojos abiertos
+        if (calibrationBuffer.current.length >= CALIBRATION_FRAMES) {
+          const sorted = [...calibrationBuffer.current].sort((a,b)=>a-b);
+          // Mediana del EAR en reposo
+          const median = sorted[Math.floor(sorted.length / 2)];
+          // Umbral = 80% de la mediana en reposo (más preciso que un valor fijo)
+          adaptiveThreshold.current = median * 0.80;
+          isCalibrated.current = true;
+        }
+        // Durante calibración, no detectar parpadeos para evitar falsos positivos
+        return;
+      }
+
+      const threshold = adaptiveThreshold.current;
+
+      // ── Detección de microsueños (ojo cerrado >1s) ─────────────────
+      if (avgEAR < EAR_MICROSLEEP_THRESH) {
+        microsleepFrames.current += 1;
+        if (microsleepFrames.current === EAR_MICROSLEEP_FRAMES) {
+          microsleepCount.current += 1; // Confirmar microsueño
+        }
+      } else {
+        microsleepFrames.current = 0;
+      }
+
+      // ── Detección de parpadeos con período refractario ───────────────
+      if (avgEAR < threshold) {
         earBelowCount.current += 1;
       } else {
-        if (earBelowCount.current >= BLINK_CONSEC_FRAMES) {
+        const now = Date.now();
+        const timeSinceLastBlink = now - lastBlinkTime.current;
+        if (
+          earBelowCount.current >= BLINK_CONSEC_FRAMES &&
+          earBelowCount.current < EAR_MICROSLEEP_FRAMES && // No contar microsueños como parpadeos
+          timeSinceLastBlink > BLINK_REFRACTORY_MS
+        ) {
           blinkCounter.current += 1;
-          blinkTimestamps.current.push(Date.now());
+          blinkTimestamps.current.push(now);
+          lastBlinkTime.current = now;
           setBlinkCount(blinkCounter.current);
         }
         earBelowCount.current = 0;
       }
 
       const currentBpm = computeBPM();
-      const level      = classifyFatigue(currentBpm);
-      const blueLight  = level === 'critical';
+      const level      = classifyFatigue(currentBpm, avgEAR, threshold, microsleepCount.current);
+      const blueLight  = level === 'critical' || level === 'warning';
 
       setBpm(currentBpm);
       setFatigueLevel(level);
-      setBlueLightActive(blueLight);
+      setBlueLightActive(level === 'critical');
 
+      // Color de puntos según nivel de fatiga
       const eyeColor = level === 'critical' ? '#ef4444' : level === 'warning' ? '#f59e0b' : '#10b981';
       ctx.fillStyle = eyeColor;
       [...LEFT_EYE, ...RIGHT_EYE].forEach((idx) => {
         const lm = landmarks[idx];
         ctx.beginPath();
-        ctx.arc(lm.x * canvas.width, lm.y * canvas.height, 2, 0, 2 * Math.PI);
+        ctx.arc(lm.x * canvas.width, lm.y * canvas.height, 2.5, 0, 2 * Math.PI);
         ctx.fill();
       });
 
-      const now = Date.now();
-      if (now - lastLogTime.current >= LOG_INTERVAL_MS) {
-        lastLogTime.current = now;
-        void sendTelemetry(earL, earR, currentBpm, level, blueLight);
+      const nowTs = Date.now();
+      if (nowTs - lastLogTime.current >= LOG_INTERVAL_MS) {
+        lastLogTime.current = nowTs;
+        void sendTelemetry(earL, earR, currentBpm, level, level === 'critical');
       }
     },
     [computeBPM, sendTelemetry],
@@ -187,6 +257,18 @@ export default function MonitorPage() {
     setIsLoading(true);
     setError(null);
     setSessionMin(0);
+    // Reset calibraci\u00f3n y detectores para cada nueva sesi\u00f3n
+    calibrationBuffer.current  = [];
+    adaptiveThreshold.current  = 0.25;
+    isCalibrated.current       = false;
+    frameCount.current         = 0;
+    earSmoothBuffer.current    = [];
+    microsleepFrames.current   = 0;
+    microsleepCount.current    = 0;
+    blinkCounter.current       = 0;
+    blinkTimestamps.current    = [];
+    earBelowCount.current      = 0;
+    lastBlinkTime.current      = 0;
     try {
       // Crear sesión en DB antes de iniciar la cámara
       const { data: { user } } = await supabase.auth.getUser();
@@ -408,7 +490,7 @@ export default function MonitorPage() {
       setBpm(Math.max(0, noise.bpm));
 
       // Actualizar fatiga basada en BPM interpolado (suave, no saltos)
-      const level = classifyFatigue(interpolated.bpm);
+      const level = classifyFatigue(interpolated.bpm, interpolated.earL, adaptiveThreshold.current, 0);
       setFatigueLevel(level);
       // Filtro azul SOLO en crítico, NO en warning
       setBlueLightActive(level === 'critical');
@@ -520,7 +602,7 @@ export default function MonitorPage() {
           <MetricBox label="BPM actual" value={isRunning ? bpm : 0} unit="bpm" highlight={fatigueLevel !== 'normal' && isRunning} />
           <MetricBox label="Estado" value={isRunning ? fatigueBadge[fatigueLevel].label : '—'} isText />
           <MetricBox label="Sesión" value={isRunning ? `${sessionMin} min` : '—'} isText />
-          <MetricBox label="EAR promedio" value={isRunning ? ((earLeft + earRight) / 2).toFixed(2) : '—'} isText={!isRunning} warn={isRunning && ((earLeft + earRight) / 2) < EAR_THRESHOLD && ((earLeft + earRight) / 2) > 0} />
+          <MetricBox label="EAR promedio" value={isRunning ? ((earLeft + earRight) / 2).toFixed(2) : '—'} isText={!isRunning} warn={isRunning && ((earLeft + earRight) / 2) < adaptiveThreshold.current && ((earLeft + earRight) / 2) > 0} />
         </div>
 
         {/* Error */}

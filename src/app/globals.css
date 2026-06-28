@@ -1,47 +1,62 @@
 @import "tailwindcss";
 
+/* ── UAI Design System — White & Elegant ── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --uai-blue:         #003087;
+  --uai-blue-mid:     #0047b3;
+  --uai-blue-light:   #e8f0fb;
+  --uai-accent:       #0066cc;
+  --uai-surface:      #ffffff;
+  --uai-surface-2:    #f8fafd;
+  --uai-surface-3:    #f0f4fa;
+  --uai-border:       #e2e8f4;
+  --uai-border-soft:  #eef2f9;
+  --uai-text:         #0a1628;
+  --uai-text-mid:     #3a4a6b;
+  --uai-text-muted:   #7a8fb0;
+  --uai-text-light:   #b0bdd6;
+
+  --background: #f8fafd;
+  --foreground: #0a1628;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* UAI style is always light — override dark mode */
+html {
+  color-scheme: light;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Onboarding form helpers ── */
+/* ── Form helpers ── */
 .input-field {
   width: 100%;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: #0f1923;
+  border-radius: 0.625rem;
+  border: 1.5px solid var(--uai-border);
+  background: #ffffff;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
-  color: white;
+  color: var(--uai-text);
   outline: none;
-  transition: box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .input-field:focus {
-  box-shadow: 0 0 0 2px #3b82f6;
+  border-color: var(--uai-accent);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.12);
 }
 .input-field::placeholder {
-  color: #4b5563;
+  color: var(--uai-text-light);
 }
 
 .btn-primary {
@@ -49,17 +64,18 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.75rem;
-  background: #2563eb;
+  border-radius: 0.625rem;
+  background: var(--uai-blue);
   color: white;
   font-weight: 600;
   font-size: 0.875rem;
-  padding: 0.875rem 1rem;
-  transition: background 0.15s, transform 0.1s;
+  padding: 0.875rem 1.25rem;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
   border: none;
   cursor: pointer;
+  letter-spacing: 0.01em;
 }
-.btn-primary:hover  { background: #1d4ed8; }
+.btn-primary:hover  { background: var(--uai-blue-mid); box-shadow: 0 4px 12px rgba(0, 48, 135, 0.25); }
 .btn-primary:active { transform: scale(0.98); }
 
 .btn-secondary {
@@ -67,15 +83,36 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #9ca3af;
+  border-radius: 0.625rem;
+  border: 1.5px solid var(--uai-border);
+  color: var(--uai-text-mid);
   font-weight: 600;
   font-size: 0.875rem;
-  padding: 0.875rem 1rem;
-  transition: background 0.15s, transform 0.1s;
+  padding: 0.875rem 1.25rem;
+  transition: background 0.15s, transform 0.1s, border-color 0.15s;
   background: transparent;
   cursor: pointer;
 }
-.btn-secondary:hover  { background: rgba(255,255,255,0.05); }
+.btn-secondary:hover  { background: var(--uai-surface-3); border-color: var(--uai-accent); color: var(--uai-blue); }
 .btn-secondary:active { transform: scale(0.98); }
+
+/* ── Animations ── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fadeSlideUp 0.3s ease forwards;
+}
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0f4fa 25%, #e2e8f4 50%, #f0f4fa 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+

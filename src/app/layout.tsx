@@ -2,17 +2,17 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'BiometricOS · Dashboard B2B',
-  description: 'Panel institucional de monitoreo de fatiga visual',
+  title: 'BiometricOS · UAI',
+  description: 'Plataforma institucional de monitoreo de bienestar estudiantil',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${inter.className} bg-gray-50 dark:bg-gray-950 antialiased`}>
+      <body className={`${inter.variable} font-sans bg-[#f8fafd] text-[#0a1628] antialiased`}>
         {children}
       </body>
     </html>

@@ -13,17 +13,17 @@ export function AuthTabs({ defaultTab = 'login' }: { defaultTab?: Tab }) {
   return (
     <div className="space-y-5">
 
-      {/* Tabs */}
-      <div className="flex rounded-xl bg-[#0f1923] p-1 gap-1">
+      {/* Tab switcher */}
+      <div className="flex rounded-xl bg-[#f0f4fa] p-1 gap-1">
         {(['login', 'register'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={cn(
-              'flex-1 py-2 text-sm font-medium rounded-lg transition-all',
+              'flex-1 py-2 text-sm font-semibold rounded-lg transition-all',
               tab === t
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-gray-200',
+                ? 'bg-white text-[#003087] shadow-sm border border-[#e2e8f4]'
+                : 'text-[#7a8fb0] hover:text-[#3a4a6b]',
             )}
           >
             {t === 'login' ? 'Ingresar' : 'Registrarse'}
@@ -31,10 +31,11 @@ export function AuthTabs({ defaultTab = 'login' }: { defaultTab?: Tab }) {
         ))}
       </div>
 
-      {/* Contenido */}
+      {/* Content */}
       {tab === 'login'    && <LoginForm />}
       {tab === 'register' && <RegisterForm />}
 
     </div>
   );
 }
+
