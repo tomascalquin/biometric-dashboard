@@ -147,7 +147,7 @@ export default function HistoryPage() {
     const { data: rawTelemetry } = await supabase
       .from('telemetry_logs')
       .select('blinks_per_minute, fatigue_level, created_at, session_id')
-      .eq('student_anon_id', user.id)
+      .in('student_anon_id', [user.id, '00000000-0000-0000-0000-000000000000'])
       .gte('created_at', from.toISOString())
       .lte('created_at', to.toISOString())
       .order('created_at', { ascending: true });
@@ -191,7 +191,7 @@ export default function HistoryPage() {
     const { data: rawSessions } = await supabase
       .from('study_sessions')
       .select('id, started_at, ended_at, subject_name_override, avg_bpm, dominant_level')
-      .eq('student_id', user.id)
+      .in('student_id', [user.id, '00000000-0000-0000-0000-000000000000'])
       .gte('started_at', from.toISOString())
       .lte('started_at', to.toISOString())
       .order('started_at', { ascending: false })
