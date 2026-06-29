@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import { TrendingDown, TrendingUp, Minus, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TrendingDown, TrendingUp, Minus, Calendar, ChevronLeft, ChevronRight, Activity, Zap, Brain, Building2, Clock, AlertTriangle } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Period = 'day' | 'week' | 'month' | 'year';
@@ -28,7 +28,7 @@ interface Session {
 interface DataPoint {
   label: string;
   avgBpm: number | null;
-  stressScore: number | null; // 0-100
+  stressScore: number | null;
   level: FatigueLevel;
   hasData: boolean;
   date: Date;
@@ -55,8 +55,6 @@ function fmtDate(iso: string): string {
 
 function bpmToStress(bpm: number | null): number {
   if (bpm === null) return 0;
-  // BPM < 8 = muy bajo (critical) → estrés alto, BPM 18+ = bueno → estrés bajo
-  // Invertimos: stress = 100 - (bpm/25 * 100), clamped
   const stress = Math.max(0, Math.min(100, 100 - (bpm / 25) * 100));
   return Math.round(stress);
 }
@@ -68,11 +66,10 @@ function stressToLevel(stress: number | null): FatigueLevel {
   return 'normal';
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────────
 export default function HistoryPage() {
   const supabase = createClient();
   const [period, setPeriod] = useState<Period>('week');
-  const [offset, setOffset] = useState(0); // 0 = current, -1 = one period back, etc.
+  const [offset, setOffset] = useState(0);
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +78,6 @@ export default function HistoryPage() {
   // ── Date range calculation ─────────────────────────────────────────────────
   const getDateRange = useCallback((): { from: Date; to: Date; labels: { label: string; date: Date }[] } => {
     const now = new Date();
-
     if (period === 'day') {
       const base = new Date(now);
       base.setDate(base.getDate() + offset);
@@ -89,13 +85,11 @@ export default function HistoryPage() {
       const end = new Date(base);
       end.setHours(23, 59, 59, 999);
       const labels: { label: string; date: Date }[] = Array.from({ length: 24 }, (_, h) => {
-        const d = new Date(base);
-        d.setHours(h, 0, 0, 0);
+        const d = new Date(base); d.setHours(h, 0, 0, 0);
         return { label: `${h}h`, date: d };
       });
       return { from: base, to: end, labels };
     }
-
     if (period === 'week') {
       const base = new Date(now);
       const day = base.getDay();
@@ -107,13 +101,11 @@ export default function HistoryPage() {
       sunday.setHours(23, 59, 59, 999);
       const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
       const labels: { label: string; date: Date }[] = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
+        const d = new Date(monday); d.setDate(monday.getDate() + i);
         return { label: dayNames[i], date: d };
       });
       return { from: monday, to: sunday, labels };
     }
-
     if (period === 'month') {
       const base = new Date(now.getFullYear(), now.getMonth() + offset, 1);
       const end = new Date(base.getFullYear(), base.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -124,7 +116,6 @@ export default function HistoryPage() {
       });
       return { from: base, to: end, labels };
     }
-
     // year
     const year = now.getFullYear() + offset;
     const from = new Date(year, 0, 1);
@@ -140,7 +131,6 @@ export default function HistoryPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const { from, to, labels } = getDateRange();
-
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
 
@@ -154,30 +144,19 @@ export default function HistoryPage() {
 
     const telemetry: TelemetryRow[] = rawTelemetry ?? [];
 
-    // ── Bucket telemetry into labels ───────────────────────────────────────
     const points: DataPoint[] = labels.map(({ label, date }) => {
       let nextDate: Date;
-      if (period === 'day') {
-        nextDate = new Date(date);
-        nextDate.setHours(date.getHours() + 1);
-      } else if (period === 'week') {
-        nextDate = new Date(date);
-        nextDate.setDate(date.getDate() + 1);
-      } else if (period === 'month') {
-        nextDate = new Date(date);
-        nextDate.setDate(date.getDate() + 1);
-      } else {
-        nextDate = new Date(date.getFullYear(), date.getMonth() + 1, 1);
-      }
+      if (period === 'day') { nextDate = new Date(date); nextDate.setHours(date.getHours() + 1); }
+      else if (period === 'week') { nextDate = new Date(date); nextDate.setDate(date.getDate() + 1); }
+      else if (period === 'month') { nextDate = new Date(date); nextDate.setDate(date.getDate() + 1); }
+      else { nextDate = new Date(date.getFullYear(), date.getMonth() + 1, 1); }
 
       const bucket = telemetry.filter(t => {
         const d = new Date(t.created_at);
         return d >= date && d < nextDate;
       });
 
-      if (bucket.length === 0) {
-        return { label, avgBpm: null, stressScore: null, level: 'normal', hasData: false, date };
-      }
+      if (bucket.length === 0) return { label, avgBpm: null, stressScore: null, level: 'normal', hasData: false, date };
 
       const avgBpm = Math.round(bucket.reduce((s, t) => s + t.blinks_per_minute, 0) / bucket.length);
       const stressScore = bpmToStress(avgBpm);
@@ -187,7 +166,6 @@ export default function HistoryPage() {
 
     setDataPoints(points);
 
-    // ── Fetch recent sessions ──────────────────────────────────────────────
     const { data: rawSessions } = await supabase
       .from('study_sessions')
       .select('id, started_at, ended_at, subject_name_override, avg_bpm, dominant_level')
@@ -204,339 +182,376 @@ export default function HistoryPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { setOffset(0); }, [period]);
 
-  // ── Period labels ─────────────────────────────────────────────────────────
   const getPeriodLabel = (): string => {
     const { from, to } = getDateRange();
     if (period === 'day') {
       if (offset === 0) return 'Hoy';
       if (offset === -1) return 'Ayer';
-      return from.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'short' });
+      return from.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
     }
     if (period === 'week') {
       if (offset === 0) return 'Esta semana';
       const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
       return `${from.toLocaleDateString('es-CL', opts)} – ${to.toLocaleDateString('es-CL', opts)}`;
     }
-    if (period === 'month') {
-      return from.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
-    }
+    if (period === 'month') return from.toLocaleDateString('es-CL', { month: 'long', year: 'numeric' });
     return String(from.getFullYear());
   };
 
-  // ── Stats ─────────────────────────────────────────────────────────────────
   const pointsWithData = dataPoints.filter(p => p.hasData);
-  const avgStress = pointsWithData.length
-    ? Math.round(pointsWithData.reduce((s, p) => s + (p.stressScore ?? 0), 0) / pointsWithData.length)
-    : null;
+  const avgStress = pointsWithData.length ? Math.round(pointsWithData.reduce((s, p) => s + (p.stressScore ?? 0), 0) / pointsWithData.length) : null;
   const maxStress = pointsWithData.length ? Math.max(...pointsWithData.map(p => p.stressScore ?? 0)) : null;
   const criticalDays = pointsWithData.filter(p => p.level === 'critical').length;
 
-  const stressLevelLabel = avgStress === null ? '—'
-    : avgStress >= 65 ? 'Alto' : avgStress >= 40 ? 'Moderado' : 'Bajo';
-  const stressColor = avgStress === null ? 'text-[#7a8fb0]'
-    : avgStress >= 65 ? 'text-red-500' : avgStress >= 40 ? 'text-amber-500' : 'text-emerald-500';
-  const TrendIcon = avgStress === null ? Minus : avgStress >= 50 ? TrendingUp : TrendingDown;
-  const trendIconColor = avgStress === null ? 'text-[#b0bdd6]'
-    : avgStress >= 50 ? 'text-red-400' : 'text-emerald-400';
-
-  // ── Chart max height ──────────────────────────────────────────────────────
-  const maxVal = Math.max(1, ...pointsWithData.map(p => p.stressScore ?? 0));
+  const avgBpmGlobal = pointsWithData.length ? Math.round(pointsWithData.reduce((s, p) => s + (p.avgBpm ?? 0), 0) / pointsWithData.length) : null;
 
   // ── Vacation band detection ───────────────────────────────────────────────
-  // Vacation: mid-Dec (15) through early March (5)
   function isVacation(date: Date): boolean {
-    const m = date.getMonth() + 1; // 1-12
+    const m = date.getMonth() + 1;
     const d = date.getDate();
     return (m === 12 && d >= 15) || m === 1 || m === 2 || (m === 3 && d <= 5);
   }
 
   return (
-    <div className="p-4 space-y-4 max-w-lg mx-auto">
-
-      {/* ── HEADER ── */}
-      <div>
-        <h1 className="text-[10px] font-bold text-[#7a8fb0] tracking-widest uppercase mb-0.5">
-          Historial de Estrés
-        </h1>
-        <p className="text-[10px] text-[#b0bdd6]">Evolución de tus niveles biométricos</p>
-      </div>
-
-      {/* ── PERIOD SELECTOR ── */}
-      <div className="bg-white rounded-2xl border border-[#e2e8f4] shadow-sm p-1 flex gap-1">
-        {(['day', 'week', 'month', 'year'] as Period[]).map((p) => (
-          <button
-            key={p}
-            onClick={() => setPeriod(p)}
-            className={cn(
-              'flex-1 py-2 rounded-xl text-[11px] font-bold transition-all',
-              period === p
-                ? 'bg-[#003087] text-white shadow-sm'
-                : 'text-[#7a8fb0] hover:text-[#0a1628] hover:bg-[#f0f4fa]'
-            )}
-          >
-            {p === 'day' ? 'Día' : p === 'week' ? 'Semana' : p === 'month' ? 'Mes' : 'Año'}
-          </button>
-        ))}
-      </div>
-
-      {/* ── NAVIGATION ── */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setOffset(o => o - 1)}
-          className="w-9 h-9 rounded-xl bg-white border border-[#e2e8f4] flex items-center justify-center text-[#7a8fb0] hover:text-[#003087] hover:border-[#003087] transition-all shadow-sm active:scale-95"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-        <div className="flex items-center gap-2">
-          <Calendar className="w-3.5 h-3.5 text-[#7a8fb0]" />
-          <span className="text-sm font-bold text-[#0a1628] capitalize">{getPeriodLabel()}</span>
+    <div className="min-h-screen bg-[#f8fafc] pb-24">
+      
+      {/* ── HEADER PREMIUM UAI ── */}
+      <div className="bg-[#003087] text-white pt-12 pb-24 px-6 rounded-b-[40px] relative overflow-hidden shadow-xl">
+        <div className="absolute top-0 right-0 opacity-10 pointer-events-none transform translate-x-1/4 -translate-y-1/4">
+          <Building2 className="w-96 h-96" />
         </div>
-        <button
-          onClick={() => setOffset(o => Math.min(0, o + 1))}
-          disabled={offset >= 0}
-          className="w-9 h-9 rounded-xl bg-white border border-[#e2e8f4] flex items-center justify-center text-[#7a8fb0] hover:text-[#003087] hover:border-[#003087] transition-all shadow-sm active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* ── STATS STRIP ── */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-white rounded-2xl p-3 border border-[#e2e8f4] shadow-sm text-center">
-          <p className="text-[9px] text-[#b0bdd6] font-bold uppercase tracking-wide mb-1">Estrés prom.</p>
-          <p className={cn('text-xl font-black leading-none', stressColor)}>
-            {avgStress !== null ? `${avgStress}%` : '—'}
-          </p>
-          <p className="text-[9px] text-[#b0bdd6] mt-1">{stressLevelLabel}</p>
-        </div>
-        <div className="bg-white rounded-2xl p-3 border border-[#e2e8f4] shadow-sm text-center">
-          <p className="text-[9px] text-[#b0bdd6] font-bold uppercase tracking-wide mb-1">Pico máx.</p>
-          <p className="text-xl font-black leading-none text-[#0a1628]">
-            {maxStress !== null ? `${maxStress}%` : '—'}
-          </p>
-          <p className="text-[9px] text-[#b0bdd6] mt-1">de estrés</p>
-        </div>
-        <div className="bg-white rounded-2xl p-3 border border-[#e2e8f4] shadow-sm text-center">
-          <p className="text-[9px] text-[#b0bdd6] font-bold uppercase tracking-wide mb-1">Niveles altos</p>
-          <p className={cn('text-xl font-black leading-none', criticalDays > 0 ? 'text-red-500' : 'text-emerald-500')}>
-            {criticalDays}
-          </p>
-          <p className="text-[9px] text-[#b0bdd6] mt-1">periodos</p>
-        </div>
-      </div>
-
-      {/* ── STRESS CHART ── */}
-      <div className="bg-white rounded-2xl border border-[#e2e8f4] shadow-sm overflow-hidden">
-        <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-[#f0f4fa]">
-          <div>
-            <h2 className="text-[10px] font-bold text-[#7a8fb0] tracking-widest uppercase">
-              Índice de Estrés
-            </h2>
-            <p className="text-[9px] text-[#b0bdd6] mt-0.5">Calculado desde parpadeos por minuto</p>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#001f5c] to-transparent opacity-50" />
+        
+        <div className="relative z-10 max-w-4xl mx-auto flex flex-col gap-2">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase backdrop-blur-md border border-white/20 flex items-center gap-1.5">
+              <Activity className="w-3 h-3" />
+              UAI Analytics
+            </span>
           </div>
-          <div className={cn('flex items-center gap-1', trendIconColor)}>
-            <TrendIcon className="w-4 h-4" />
-            <span className="text-[10px] font-bold">{avgStress !== null ? `${avgStress}%` : '—'}</span>
-          </div>
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
+            Métricas de <br className="sm:hidden" />Rendimiento
+          </h1>
+          <p className="text-[#a3c2ff] text-sm sm:text-base font-medium max-w-md">
+            Visualización avanzada del estrés cognitivo y fatiga a través de telemetría biométrica de alta precisión.
+          </p>
         </div>
+      </div>
 
-        <div className="p-4">
-          {loading ? (
-            <div className="flex items-end justify-between h-32 gap-1 animate-pulse">
-              {Array.from({ length: 7 }, (_, i) => (
-                <div key={i} className="flex-1 bg-[#f0f4fa] rounded-t-md" style={{ height: `${30 + Math.random() * 60}%` }} />
-              ))}
-            </div>
-          ) : dataPoints.every(d => !d.hasData) ? (
-            <div className="text-center py-8">
-              <div className="w-12 h-12 rounded-2xl bg-[#f0f4fa] flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">📊</span>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-16 relative z-20 space-y-6">
+
+        {/* ── STATS HERO CARDS ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="col-span-2 bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex flex-col justify-between relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-110" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 text-gray-400 mb-4">
+                <Brain className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">Estrés Promedio</span>
               </div>
-              <p className="text-sm font-bold text-[#7a8fb0]">Sin datos para este periodo</p>
-              <p className="text-[10px] text-[#b0bdd6] mt-1">Usa el monitor biométrico para generar registros</p>
+              <div className="flex items-end gap-3">
+                <span className={cn("text-5xl font-black tracking-tighter leading-none", 
+                  avgStress === null ? "text-gray-300" : avgStress >= 65 ? "text-red-500" : avgStress >= 40 ? "text-amber-500" : "text-emerald-500"
+                )}>
+                  {avgStress !== null ? `${avgStress}%` : '—'}
+                </span>
+                {avgStress !== null && (
+                  <span className={cn("text-xs font-bold mb-1.5 px-2 py-0.5 rounded-md", 
+                    avgStress >= 65 ? "bg-red-50 text-red-600" : avgStress >= 40 ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"
+                  )}>
+                    {avgStress >= 65 ? 'Nivel Crítico' : avgStress >= 40 ? 'Nivel Moderado' : 'Nivel Óptimo'}
+                  </span>
+                )}
+              </div>
             </div>
-          ) : (
-            <>
-              {/* Y-axis labels */}
-              <div className="flex gap-2">
-                <div className="flex flex-col justify-between h-32 text-right pr-1 py-0.5">
-                  {['100%', '75%', '50%', '25%', '0%'].map(l => (
-                    <span key={l} className="text-[8px] text-[#b0bdd6] font-medium">{l}</span>
+          </div>
+
+          <div className="bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex flex-col justify-between">
+            <div className="flex items-center gap-2 text-gray-400 mb-4">
+              <Zap className="w-4 h-4" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Picos Críticos</span>
+            </div>
+            <div>
+              <span className="text-3xl font-black text-[#0a1628] leading-none">{criticalDays}</span>
+              <p className="text-xs text-gray-400 font-medium mt-1">alertas detectadas</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex flex-col justify-between">
+            <div className="flex items-center gap-2 text-gray-400 mb-4">
+              <Clock className="w-4 h-4" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">BPM Prom.</span>
+            </div>
+            <div>
+              <span className="text-3xl font-black text-[#0a1628] leading-none">{avgBpmGlobal ?? '—'}</span>
+              <p className="text-xs text-gray-400 font-medium mt-1">parpadeos / min</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── CHART SECTION ── */}
+        <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+          
+          {/* Chart Header & Controls */}
+          <div className="p-5 sm:p-6 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-[#0a1628]">Evolución Histórica</h2>
+              <p className="text-xs text-gray-400 font-medium mt-0.5">Análisis de la fatiga a lo largo del tiempo</p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <div className="bg-gray-100/80 p-1 rounded-2xl flex gap-1 w-full sm:w-auto">
+                {(['day', 'week', 'month', 'year'] as Period[]).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    className={cn(
+                      'flex-1 sm:flex-none px-4 py-1.5 rounded-xl text-xs font-bold transition-all',
+                      period === p
+                        ? 'bg-white text-[#003087] shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    )}
+                  >
+                    {p === 'day' ? 'Día' : p === 'week' ? 'Semana' : p === 'month' ? 'Mes' : 'Año'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="px-5 py-4 bg-gray-50/50 flex items-center justify-between">
+            <button
+              onClick={() => setOffset(o => o - 1)}
+              className="w-8 h-8 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-gray-500 hover:text-[#003087] transition-all hover:scale-105 active:scale-95"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div className="flex items-center gap-2 text-[#003087]">
+              <Calendar className="w-4 h-4" />
+              <span className="text-sm font-bold capitalize">{getPeriodLabel()}</span>
+            </div>
+            <button
+              onClick={() => setOffset(o => Math.min(0, o + 1))}
+              disabled={offset >= 0}
+              className="w-8 h-8 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-gray-500 hover:text-[#003087] transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* The Chart */}
+          <div className="p-5 sm:p-8 pt-6">
+            {loading ? (
+              <div className="h-[250px] flex items-end justify-between gap-2 sm:gap-4 animate-pulse">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className="flex-1 bg-gray-100 rounded-t-xl" style={{ height: `${20 + Math.random() * 80}%` }} />
+                ))}
+              </div>
+            ) : dataPoints.every(d => !d.hasData) ? (
+              <div className="h-[250px] flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                  <Activity className="w-6 h-6 text-gray-300" />
+                </div>
+                <p className="text-base font-bold text-gray-400">Sin registros biométricos</p>
+                <p className="text-xs text-gray-400 mt-1">No hay datos suficientes para generar la visualización en este periodo.</p>
+              </div>
+            ) : (
+              <div className="relative h-[250px] flex flex-col justify-end">
+                {/* Horizontal Grid lines */}
+                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none z-0">
+                  {[100, 75, 50, 25, 0].map((val, i) => (
+                    <div key={i} className="flex items-center gap-4 w-full h-0">
+                      <span className="text-[9px] font-bold text-gray-300 w-6 text-right">{val}%</span>
+                      <div className="flex-1 border-t border-dashed border-gray-200" />
+                    </div>
                   ))}
                 </div>
 
-                {/* Chart bars */}
-                <div className="flex-1 relative">
-                  {/* Grid lines */}
-                  <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                    {[0, 1, 2, 3, 4].map(i => (
-                      <div key={i} className="border-t border-[#f0f4fa] w-full" />
-                    ))}
-                  </div>
-
-                  {/* Vacation banner (only for month/year view) */}
-                  {(period === 'month' || period === 'year') && (
-                    <div className="absolute inset-0 flex pointer-events-none">
-                      {dataPoints.map((dp, i) => (
-                        isVacation(dp.date) ? (
-                          <div
-                            key={i}
-                            className="flex-1 bg-emerald-50/70 border-l border-r border-emerald-100"
-                            title="Vacaciones de verano"
-                          />
-                        ) : <div key={i} className="flex-1" />
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Bars */}
-                  <div className="relative flex items-end h-32 gap-0.5">
-                    {dataPoints.map((dp, i) => {
-                      const heightPct = dp.hasData ? Math.max(4, (dp.stressScore ?? 0) / 100 * 100) : 3;
-                      const barColor = !dp.hasData
-                        ? 'bg-[#f0f4fa]'
-                        : dp.level === 'critical' ? 'bg-red-400'
-                          : dp.level === 'warning' ? 'bg-amber-400'
-                            : 'bg-emerald-400';
-                      const isVac = isVacation(dp.date);
-                      const isHovered = hoveredIdx === i;
-
-                      return (
+                {/* Vacation banner (only for month/year view) */}
+                {(period === 'month' || period === 'year') && (
+                  <div className="absolute inset-0 flex pointer-events-none z-0 ml-[2.5rem]">
+                    {dataPoints.map((dp, i) => (
+                      isVacation(dp.date) ? (
                         <div
                           key={i}
-                          className="flex-1 flex flex-col items-center justify-end h-full cursor-pointer group relative"
-                          onMouseEnter={() => setHoveredIdx(i)}
-                          onMouseLeave={() => setHoveredIdx(null)}
-                          onTouchStart={() => setHoveredIdx(i)}
-                        >
-                          {/* Tooltip */}
-                          {isHovered && dp.hasData && (
-                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10 bg-[#0a1628] text-white rounded-xl px-2.5 py-1.5 text-[9px] font-bold whitespace-nowrap shadow-lg pointer-events-none">
-                              <div className="text-white/60 text-[8px]">{dp.label}</div>
-                              <div>{dp.stressScore}% estrés</div>
-                              <div className="text-white/60">{dp.avgBpm} parpadeos/min</div>
-                              {isVac && <div className="text-emerald-400">🌴 Vacaciones</div>}
-                              <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-[#0a1628]" />
-                            </div>
-                          )}
-                          <div
-                            className={cn(
-                              'w-full rounded-t-md transition-all duration-200',
-                              barColor,
-                              isHovered && 'brightness-110 ring-2 ring-white ring-offset-1',
-                              isVac && dp.hasData && 'opacity-70'
-                            )}
-                            style={{ height: `${heightPct}%` }}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* X-axis labels — show every N-th depending on count */}
-              {(() => {
-                const total = dataPoints.length;
-                const step = total <= 12 ? 1 : total <= 31 ? 3 : total <= 52 ? 4 : 1;
-                return (
-                  <div className="flex mt-1 ml-7">
-                    {dataPoints.map((dp, i) => (
-                      <div key={i} className="flex-1 text-center">
-                        {i % step === 0 && (
-                          <span className={cn(
-                            'text-[8px] font-medium',
-                            hoveredIdx === i ? 'text-[#003087] font-bold' : 'text-[#b0bdd6]'
-                          )}>
-                            {dp.label}
-                          </span>
-                        )}
-                      </div>
+                          className="flex-1 bg-blue-50/50 border-l border-r border-blue-100/50"
+                          title="Vacaciones de verano"
+                        />
+                      ) : <div key={i} className="flex-1" />
                     ))}
                   </div>
-                );
-              })()}
+                )}
 
-              {/* Legend */}
-              <div className="flex items-center gap-3 mt-3 pt-3 border-t border-[#f0f4fa]">
+                {/* Bars Area */}
+                <div className="relative z-10 flex items-end h-[calc(100%-12px)] w-[calc(100%-2.5rem)] ml-[2.5rem] gap-1 sm:gap-2">
+                  {dataPoints.map((dp, i) => {
+                    const heightPct = dp.hasData ? Math.max(5, (dp.stressScore ?? 0)) : 0;
+                    const isHovered = hoveredIdx === i;
+                    
+                    let barClass = "from-emerald-400 to-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.3)]";
+                    if (dp.level === 'critical') barClass = "from-red-500 to-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]";
+                    else if (dp.level === 'warning') barClass = "from-amber-400 to-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.3)]";
+
+                    if (!dp.hasData) barClass = "bg-transparent";
+
+                    return (
+                      <div
+                        key={i}
+                        className="flex-1 flex flex-col items-center justify-end h-full relative group cursor-crosshair"
+                        onMouseEnter={() => setHoveredIdx(i)}
+                        onMouseLeave={() => setHoveredIdx(null)}
+                      >
+                        {/* Custom Tooltip */}
+                        {isHovered && dp.hasData && (
+                          <div className="absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+                            <div className="bg-[#0a1628]/95 backdrop-blur-md text-white rounded-2xl px-4 py-3 shadow-2xl min-w-[140px] border border-white/10 transform transition-all duration-200 animate-in fade-in slide-in-from-bottom-2">
+                              <p className="text-[10px] font-bold text-gray-400 mb-2 border-b border-white/10 pb-1">{dp.label}</p>
+                              
+                              <div className="flex justify-between items-end mb-1">
+                                <span className="text-xs font-medium text-gray-300">Estrés</span>
+                                <span className={cn("text-lg font-black leading-none", 
+                                  dp.level === 'critical' ? 'text-red-400' : dp.level === 'warning' ? 'text-amber-400' : 'text-emerald-400'
+                                )}>{dp.stressScore}%</span>
+                              </div>
+                              
+                              <div className="flex justify-between items-end">
+                                <span className="text-xs font-medium text-gray-300">Fatiga</span>
+                                <span className="text-sm font-bold leading-none">{dp.avgBpm} <span className="text-[9px] font-normal text-gray-500">BPM</span></span>
+                              </div>
+                            </div>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-[#0a1628]/95" />
+                          </div>
+                        )}
+                        
+                        {/* The Bar */}
+                        <div 
+                          className={cn(
+                            "w-full rounded-t-lg transition-all duration-500 ease-out",
+                            dp.hasData && "bg-gradient-to-t",
+                            barClass,
+                            isHovered && dp.hasData && "brightness-110 opacity-100",
+                            !isHovered && hoveredIdx !== null && dp.hasData && "opacity-40"
+                          )}
+                          style={{ height: `${heightPct}%` }}
+                        >
+                          {/* Inner highlight for 3D effect */}
+                          {dp.hasData && <div className="w-full h-full rounded-t-lg border-t border-l border-white/20" />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* X Axis Labels */}
+            {!loading && !dataPoints.every(d => !d.hasData) && (
+              <div className="flex mt-3 ml-[2.5rem]">
+                {dataPoints.map((dp, i) => {
+                  const total = dataPoints.length;
+                  const step = total <= 12 ? 1 : total <= 31 ? 3 : total <= 52 ? 4 : 1;
+                  return (
+                    <div key={i} className="flex-1 text-center">
+                      {i % step === 0 && (
+                        <span className={cn(
+                          'text-[9px] font-bold transition-colors',
+                          hoveredIdx === i ? 'text-[#003087]' : 'text-gray-400'
+                        )}>
+                          {dp.label}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Legend */}
+            {!loading && !dataPoints.every(d => !d.hasData) && (
+              <div className="flex items-center flex-wrap gap-4 mt-6 pt-4 border-t border-gray-100 ml-[2.5rem]">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />
-                  <span className="text-[9px] text-[#7a8fb0] font-medium">Bajo</span>
+                  <div className="w-2.5 h-2.5 rounded-sm bg-gradient-to-t from-emerald-400 to-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.3)]" />
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Óptimo</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-amber-400" />
-                  <span className="text-[9px] text-[#7a8fb0] font-medium">Moderado</span>
+                  <div className="w-2.5 h-2.5 rounded-sm bg-gradient-to-t from-amber-400 to-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.3)]" />
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Moderado</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-sm bg-red-400" />
-                  <span className="text-[9px] text-[#7a8fb0] font-medium">Alto</span>
+                  <div className="w-2.5 h-2.5 rounded-sm bg-gradient-to-t from-red-500 to-red-400 shadow-[0_0_8px_rgba(239,68,68,0.3)]" />
+                  <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Crítico</span>
                 </div>
                 {(period === 'month' || period === 'year') && (
                   <div className="flex items-center gap-1.5 ml-auto">
-                    <div className="w-2.5 h-2.5 rounded-sm bg-emerald-100 border border-emerald-300" />
-                    <span className="text-[9px] text-[#7a8fb0] font-medium">Vacaciones</span>
+                    <div className="w-2.5 h-2.5 rounded-sm bg-blue-50 border border-blue-200" />
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Vacaciones</span>
                   </div>
                 )}
               </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* ── SESSION LIST ── */}
-      <section className="bg-white rounded-2xl border border-[#e2e8f4] shadow-sm overflow-hidden">
-        <div className="px-4 pt-4 pb-3 border-b border-[#f0f4fa]">
-          <h2 className="text-[10px] font-bold text-[#7a8fb0] tracking-widest uppercase">
-            Sesiones en el periodo
-          </h2>
-        </div>
-
-        {sessions.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm font-semibold text-[#7a8fb0]">Sin sesiones registradas</p>
-            <p className="text-[10px] text-[#b0bdd6] mt-1">Cambia el periodo o inicia el monitor</p>
+            )}
           </div>
-        ) : (
-          <div className="divide-y divide-[#f0f4fa]">
-            {sessions.map((s) => {
-              const level = (s.dominant_level ?? 'normal') as FatigueLevel;
-              const avgBpm = s.avg_bpm ? Math.round(s.avg_bpm) : null;
-              const stress = bpmToStress(avgBpm);
-              const label = level === 'critical' ? 'Crítico' : level === 'warning' ? 'Moderado' : 'Normal';
-              const badgeCls = level === 'critical'
-                ? 'bg-red-50 text-red-700 border-red-200'
-                : level === 'warning'
-                  ? 'bg-amber-50 text-amber-700 border-amber-200'
-                  : 'bg-emerald-50 text-emerald-700 border-emerald-200';
-              const dotCls = level === 'critical' ? 'bg-red-500' : level === 'warning' ? 'bg-amber-500' : 'bg-emerald-500';
+        </div>
 
-              return (
-                <div key={s.id} className="flex items-center justify-between px-4 py-3 gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#0a1628] truncate">
-                      {s.subject_name_override ?? 'Sesión de estudio'}
-                    </p>
-                    <p className="text-[10px] text-[#7a8fb0] mt-0.5">
-                      {fmtDate(s.started_at)}
-                      {s.ended_at ? ` · ${fmtDuration(s.started_at, s.ended_at)}` : ' · En curso'}
-                    </p>
+        {/* ── SESSION BREAKDOWN ── */}
+        <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-[#0a1628] uppercase tracking-wider flex items-center gap-2">
+              <Activity className="w-4 h-4 text-[#003087]" />
+              Desglose de Sesiones
+            </h2>
+            <span className="bg-gray-100 text-gray-500 text-xs font-bold px-2.5 py-1 rounded-full">{sessions.length} registradas</span>
+          </div>
+
+          {sessions.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-sm font-bold text-gray-400">Sin sesiones en este periodo</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {sessions.map((s) => {
+                const level = (s.dominant_level ?? 'normal') as FatigueLevel;
+                const avgBpm = s.avg_bpm ? Math.round(s.avg_bpm) : null;
+                const stress = bpmToStress(avgBpm);
+                
+                return (
+                  <div key={s.id} className="p-5 flex items-center gap-4 hover:bg-gray-50/50 transition-colors group">
+                    <div className={cn(
+                      "w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm shrink-0",
+                      level === 'critical' ? 'bg-red-50 text-red-500' : level === 'warning' ? 'bg-amber-50 text-amber-500' : 'bg-emerald-50 text-emerald-500'
+                    )}>
+                      {level === 'critical' ? <AlertTriangle className="w-5 h-5" /> : level === 'warning' ? <Activity className="w-5 h-5" /> : <Brain className="w-5 h-5" />}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <h3 className="text-sm font-bold text-[#0a1628] truncate">{s.subject_name_override ?? 'Sesión de Análisis'}</h3>
+                        <span className={cn(
+                          "text-[10px] font-bold px-2 py-0.5 rounded-md",
+                          level === 'critical' ? 'bg-red-100 text-red-700' : level === 'warning' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                        )}>
+                          {level === 'critical' ? 'CRÍTICO' : level === 'warning' ? 'MODERADO' : 'ÓPTIMO'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-gray-400 font-medium">
+                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {fmtDate(s.started_at)}</span>
+                        {s.ended_at && <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {fmtDuration(s.started_at, s.ended_at)}</span>}
+                      </div>
+                    </div>
+
                     {avgBpm !== null && (
-                      <p className="text-[9px] text-[#b0bdd6] mt-0.5">
-                        {avgBpm} parp/min · Estrés {stress}%
-                      </p>
+                      <div className="text-right shrink-0">
+                        <div className="text-lg font-black text-[#0a1628] leading-none">{stress}%</div>
+                        <div className="text-[10px] font-bold text-gray-400 mt-1 tracking-wider uppercase">Estrés</div>
+                      </div>
                     )}
                   </div>
-                  <span className={cn('px-2.5 py-1 rounded-xl flex items-center gap-1.5 border text-[10px] font-bold flex-shrink-0', badgeCls)}>
-                    <span className={cn('w-1.5 h-1.5 rounded-full', dotCls)} />
-                    {label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
+      </div>
     </div>
   );
 }
