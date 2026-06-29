@@ -170,20 +170,29 @@ export async function AdminDashboard() {
             </div>
             <div className="p-6">
               {/* Gráfico de Barras CSS Puro */}
-              <div className="flex items-end justify-between h-48 gap-2 md:gap-4 mb-4">
+              <div className="flex items-end justify-between h-56 gap-2 md:gap-4 mb-4 border-b border-dashed border-[#e2e8f4] pb-2 relative">
+                
+                {/* Líneas guía de fondo */}
+                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
+                  <div className="border-t border-[#7a8fb0] w-full"></div>
+                  <div className="border-t border-[#7a8fb0] w-full"></div>
+                  <div className="border-t border-[#7a8fb0] w-full"></div>
+                  <div className="border-t border-[#7a8fb0] w-full"></div>
+                </div>
+
                 {[15, 25, 45, 80, 100, 85, 55, 30, 20, 10, 15, 20].map((h, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                  <div key={i} className="flex-1 flex flex-col justify-end items-center h-full group z-10">
                     <div
                       className={cn(
-                        "w-full rounded-t-lg transition-all duration-500 ease-out hover:opacity-80 relative",
+                        "w-full rounded-t-xl transition-all duration-700 ease-out group-hover:scale-105 relative shadow-[0_-2px_10px_rgba(0,0,0,0.05)]",
                         h > 80 ? "bg-gradient-to-t from-red-500 to-red-400" : 
                         h > 50 ? "bg-gradient-to-t from-amber-500 to-amber-400" : 
                         "bg-gradient-to-t from-emerald-500 to-emerald-400"
                       )}
-                      style={{ height: `${Math.max(h, 5)}%` }}
+                      style={{ height: `${Math.max(h, 4)}%` }}
                     >
                       {/* Tooltip Hover (CSS) */}
-                      <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-[#0a1628] text-white text-[10px] font-bold px-2 py-1 rounded shadow-xl pointer-events-none transition-opacity whitespace-nowrap z-10">
+                      <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-[#0a1628] text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xl pointer-events-none transition-all duration-200 transform group-hover:-translate-y-1 whitespace-nowrap z-20">
                         {h}% Crítico
                       </div>
                     </div>
@@ -195,16 +204,18 @@ export async function AdminDashboard() {
                   <span key={t}>{t}</span>
                 ))}
               </div>
-              <div className="mt-6 flex items-center justify-between p-4 bg-[#f8fafd] rounded-2xl border border-[#e2e8f4]">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
+              <div className="mt-8 flex items-center justify-between p-5 bg-gradient-to-r from-red-50 to-white rounded-2xl border border-red-100 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                <div className="flex items-center gap-4">
+                  <div className="w-4 h-4 bg-red-500 rounded-full animate-ping absolute opacity-75"></div>
+                  <div className="w-4 h-4 bg-red-600 rounded-full shadow-[0_0_12px_rgba(239,68,68,0.8)] relative"></div>
                   <div>
-                    <p className="text-xs font-semibold text-[#7a8fb0]">Pico Crítico Detectado</p>
-                    <p className="text-sm font-bold text-[#0a1628]">12:00 – 14:00 hrs (Horario de Solemnes)</p>
+                    <p className="text-xs font-bold text-red-800 tracking-wide uppercase mb-0.5">Pico Crítico Detectado</p>
+                    <p className="text-sm font-bold text-[#0a1628]">12:00 – 14:00 hrs <span className="text-[#7a8fb0] font-medium">(Periodo de Evaluaciones)</span></p>
                   </div>
                 </div>
-                <button className="text-xs font-bold text-[#003087] bg-white px-3 py-1.5 rounded-lg border border-[#e2e8f4] hover:bg-[#e8f0fb] transition-colors">
-                  Generar Acción
+                <button className="text-xs font-bold text-white bg-[#003087] px-4 py-2 rounded-xl shadow-md hover:bg-[#002070] transition-colors hover:shadow-lg active:scale-95">
+                  Generar Intervención
                 </button>
               </div>
             </div>
