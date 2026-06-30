@@ -12,8 +12,8 @@ const LEFT_EYE = [362, 385, 387, 263, 373, 380];
 // â”€â”€â”€ Constantes del sistema biomÃ©trico â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const BLINK_CONSEC_FRAMES = 2;       // Frames consecutivos para confirmar parpadeo
 const BLINK_REFRACTORY_MS = 150;     // Tiempo mÃ­nimo entre parpadeos â€” evita doble-detecciÃ³n
-const BPM_CRITICAL_THRESHOLD = 8;       // < 8 bpm = fatiga crÃ­tica
-const BPM_WARNING_THRESHOLD = 14;      // < 14 bpm = fatiga moderada
+const BPM_CRITICAL_THRESHOLD = 5;       // < 5 bpm = fatiga severa (visión de túnel)
+const BPM_WARNING_THRESHOLD = 10;      // < 10 bpm = fatiga moderada (lectura en pantalla)
 const EAR_MICROSLEEP_THRESH = 0.15;    // EAR < 0.15 = ojo muy cerrado
 const EAR_MICROSLEEP_FRAMES = 25;      // ~1 seg con ojo cerrado = microsueÃ±o
 const LOG_INTERVAL_MS = 10_000;
