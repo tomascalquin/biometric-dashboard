@@ -412,7 +412,14 @@ export default function MonitorPage() {
       })();
     }
 
-    // Limpiar UI
+    // Limpiar UI y guardar resumen
+    setDemoResult({
+      bpm: currentValuesRef.current.bpm,
+      level: currentValuesRef.current.level,
+      ear: (currentValuesRef.current.earL + currentValuesRef.current.earR) / 2,
+      blinks: blinkCounter.current
+    });
+
     setEarLeft(0);
     setEarRight(0);
     setBpm(0);
@@ -579,7 +586,44 @@ export default function MonitorPage() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
             <div className="lg:col-span-3 space-y-4">
               <div className="relative rounded-2xl overflow-hidden bg-[#0a1628] w-full aspect-[4/3] flex items-center justify-center shadow-xl ring-1 ring-white/5">
-                {cameraPhase === "idle" && (<div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-white"><div className="w-20 h-20 rounded-3xl bg-white/10 border border-white/10 flex items-center justify-center"><span className="text-4xl">👁️</span></div><p className="text-sm font-bold text-white">Monitor biométrico</p></div>)}
+                {cameraPhase === "idle" && !demoResult && (<div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-white"><div className="w-20 h-20 rounded-3xl bg-white/10 border border-white/10 flex items-center justify-center"><span className="text-4xl">👁️</span></div><p className="text-sm font-bold text-white">Monitor biométrico</p></div>)}
+                
+                {cameraPhase === "idle" && demoResult && (
+                  <div className="absolute inset-0 bg-white z-30 p-8 flex flex-col items-center justify-center text-center animate-slide-up-fade">
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center text-4xl mb-4 ${demoResult.level === 'critical' ? 'bg-red-100 text-red-600' : demoResult.level === 'warning' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                      {demoResult.level === 'critical' ? '🔴' : demoResult.level === 'warning' ? '🟡' : '🟢'}
+                    </div>
+                    <h2 className="text-2xl lg:text-3xl font-black text-[#0a1628] mb-2 tracking-tight">Resumen de Sesión</h2>
+                    <p className="text-sm text-[#7a8fb0] mb-8 font-medium">Análisis final de tu carga cognitiva</p>
+                    
+                    <div className="grid grid-cols-2 gap-4 w-full max-w-md mb-8">
+                      <div className="bg-[#f8fafd] rounded-2xl p-5 border border-[#e2e8f4] shadow-sm text-left">
+                        <p className="text-[10px] font-black text-[#7a8fb0] mb-1.5 tracking-widest uppercase">Parpadeos Totales</p>
+                        <p className="text-3xl font-black text-[#0a1628]">{demoResult.blinks}</p>
+                      </div>
+                      <div className="bg-[#f8fafd] rounded-2xl p-5 border border-[#e2e8f4] shadow-sm text-left">
+                        <p className="text-[10px] font-black text-[#7a8fb0] mb-1.5 tracking-widest uppercase">Tasa Promedio</p>
+                        <p className="text-3xl font-black text-[#0a1628]">{demoResult.bpm} <span className="text-xs font-bold text-[#7a8fb0] tracking-normal">bpm</span></p>
+                      </div>
+                      <div className={`col-span-2 rounded-2xl p-5 border shadow-sm text-left flex items-center justify-between ${demoResult.level === 'critical' ? 'bg-red-50 border-red-200' : demoResult.level === 'warning' ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
+                        <div>
+                          <p className={`text-[10px] font-black mb-1.5 tracking-widest uppercase ${demoResult.level === 'critical' ? 'text-red-500' : demoResult.level === 'warning' ? 'text-amber-500' : 'text-emerald-500'}`}>Carga Cognitiva Final</p>
+                          <p className={`text-xl font-black ${demoResult.level === 'critical' ? 'text-red-700' : demoResult.level === 'warning' ? 'text-amber-700' : 'text-emerald-700'}`}>
+                            {demoResult.level === 'critical' ? 'Alta (Crítica)' : demoResult.level === 'warning' ? 'Moderada' : 'Baja (Óptima)'}
+                          </p>
+                        </div>
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${demoResult.level === 'critical' ? 'bg-red-100' : demoResult.level === 'warning' ? 'bg-amber-100' : 'bg-emerald-100'}`}>
+                          {demoResult.level === 'critical' ? '🧠' : demoResult.level === 'warning' ? '⚡' : '✨'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <button onClick={() => setDemoResult(null)} className="px-8 py-3.5 bg-[#0a1628] text-white font-bold text-sm rounded-xl hover:bg-[#003087] transition-all shadow-lg active:scale-95">
+                      Cerrar y volver al monitor
+                    </button>
+                  </div>
+                )}
+                
                 {cameraPhase === "loading" && (<div className="absolute inset-0 flex items-center justify-center bg-[#0a1628] z-10"><div className="w-14 h-14 border-2 border-t-blue-400 rounded-full animate-spin" /></div>)}
                 <video ref={videoRef} className={`w-full h-full object-cover ${!isRunning ? "opacity-0 absolute" : ""}`} playsInline muted />
                 <canvas ref={canvasRef} className={`absolute inset-0 w-full h-full ${!isRunning ? "opacity-0" : ""}`} />
