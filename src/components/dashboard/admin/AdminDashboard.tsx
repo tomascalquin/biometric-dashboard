@@ -2,6 +2,7 @@ import { ArrowUp, Map, AlertTriangle, FileText, Users, TrendingUp, Shield } from
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/server';
+import { AdminHistoryChart } from './AdminHistoryChart';
 
 export async function AdminDashboard() {
   const supabase = await createClient();
@@ -127,99 +128,10 @@ export async function AdminDashboard() {
         {/* COLUMNA DERECHA: GRÁFICOS Y ANÁLISIS (2/3) */}
         <div className="xl:col-span-2 space-y-8">
 
-      {/* ── CARRERAS ── */}
-      <section className="bg-white rounded-2xl border border-[#e2e8f4] shadow-sm overflow-hidden">
-        <div className="px-4 pt-4 pb-3 border-b border-[#f0f4fa]">
-          <h2 className="text-[10px] font-bold text-[#7a8fb0] tracking-widest uppercase">Carrera — Nivel de fatiga</h2>
-        </div>
-        <div className="p-4 space-y-4">
-          {fatigue.length === 0 ? (
-            <p className="text-sm text-[#b0bdd6] text-center py-3">Sin datos de telemetría aún</p>
-          ) : (
-            fatigue.map((c) => {
-              const total = Number(c.total_students) || 1;
-              const critPct = Math.round((Number(c.critical_students) / total) * 100);
-              const bpmStr  = c.avg_bpm != null ? String(c.avg_bpm) : '—';
-              const level: 'critical' | 'warning' | 'normal' =
-                Number(c.critical_students) > 0 ? 'critical' :
-                Number(c.warning_students)  > 0 ? 'warning'  : 'normal';
-              return (
-                <CareerProgress
-                  key={c.career_name}
-                  name={c.career_name}
-                  value={critPct || Math.round((Number(c.warning_students) / total) * 100)}
-                  bpm={bpmStr}
-                  level={level}
-                />
-              );
-            })
-          )}
-        </div>
-      </section>
+      {/* (Duplicated Career section removed) */}
 
           {/* ── FRANJA HORARIA PREMIUM (Pulse Trend) ── */}
-          <section className="bg-white rounded-3xl border border-[#e2e8f4] shadow-sm overflow-hidden">
-            <div className="px-6 pt-6 pb-4 border-b border-[#f0f4fa] flex justify-between items-center">
-              <div>
-                <h2 className="text-xs font-bold text-[#7a8fb0] tracking-widest uppercase">Carga Cognitiva por Hora</h2>
-                <p className="text-sm text-[#0a1628] font-bold mt-1">Tendencia diaria de estrés crónico</p>
-              </div>
-              <div className="px-3 py-1 bg-[#f8fafd] rounded-lg border border-[#e2e8f4] text-xs font-bold text-[#3a4a6b]">
-                Últimas 12h
-              </div>
-            </div>
-            <div className="p-6">
-              {/* Gráfico de Barras CSS Puro */}
-              <div className="flex items-end justify-between h-56 gap-2 md:gap-4 mb-4 border-b border-dashed border-[#e2e8f4] pb-2 relative">
-                
-                {/* Líneas guía de fondo */}
-                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-20">
-                  <div className="border-t border-[#7a8fb0] w-full"></div>
-                  <div className="border-t border-[#7a8fb0] w-full"></div>
-                  <div className="border-t border-[#7a8fb0] w-full"></div>
-                  <div className="border-t border-[#7a8fb0] w-full"></div>
-                </div>
-
-                {[15, 25, 45, 80, 100, 85, 55, 30, 20, 10, 15, 20].map((h, i) => (
-                  <div key={i} className="flex-1 flex flex-col justify-end items-center h-full group z-10">
-                    <div
-                      className={cn(
-                        "w-full rounded-t-xl transition-all duration-700 ease-out group-hover:scale-105 relative shadow-[0_-2px_10px_rgba(0,0,0,0.05)]",
-                        h > 80 ? "bg-gradient-to-t from-red-500 to-red-400" : 
-                        h > 50 ? "bg-gradient-to-t from-amber-500 to-amber-400" : 
-                        "bg-gradient-to-t from-emerald-500 to-emerald-400"
-                      )}
-                      style={{ height: `${Math.max(h, 4)}%` }}
-                    >
-                      {/* Tooltip Hover (CSS) */}
-                      <div className="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-[#0a1628] text-white text-[11px] font-bold px-3 py-1.5 rounded shadow-xl pointer-events-none transition-all duration-200 transform group-hover:-translate-y-1 whitespace-nowrap z-20">
-                        {h}% Crítico
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-between text-xs font-bold text-[#b0bdd6]">
-                {['8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'].map(t => (
-                  <span key={t}>{t}</span>
-                ))}
-              </div>
-              <div className="mt-8 flex items-center justify-between p-5 bg-gradient-to-r from-red-50 to-white rounded-2xl border border-red-100 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
-                <div className="flex items-center gap-4">
-                  <div className="w-4 h-4 bg-red-500 rounded-full animate-ping absolute opacity-75"></div>
-                  <div className="w-4 h-4 bg-red-600 rounded-full shadow-[0_0_12px_rgba(239,68,68,0.8)] relative"></div>
-                  <div>
-                    <p className="text-xs font-bold text-red-800 tracking-wide uppercase mb-0.5">Pico Crítico Detectado</p>
-                    <p className="text-sm font-bold text-[#0a1628]">12:00 – 14:00 hrs <span className="text-[#7a8fb0] font-medium">(Periodo de Evaluaciones)</span></p>
-                  </div>
-                </div>
-                <button className="text-xs font-bold text-white bg-[#003087] px-4 py-2 rounded-xl shadow-md hover:bg-[#002070] transition-colors hover:shadow-lg active:scale-95">
-                  Generar Intervención
-                </button>
-              </div>
-            </div>
-          </section>
+          <AdminHistoryChart />
 
           {/* ── CARRERAS (Subject Burnout / Radar) ── */}
           <section className="bg-white rounded-3xl border border-[#e2e8f4] shadow-sm overflow-hidden">

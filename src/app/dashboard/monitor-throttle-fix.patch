@@ -10,7 +10,26 @@ const onFaceMeshResults = useCallback(
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width  = video.videoWidth;
+    canvas.width  = video.videoWidth;## Error Type
+Runtime InvalidStateError
+
+## Error Message
+Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The image argument is a canvas element with a width or height of 0.
+
+
+    at MonitorPage.useCallback[onFaceMeshResults] (src/app/dashboard/monitor/page.tsx:168:11)
+
+## Code Frame
+  166 |       canvas.height = video.videoHeight;
+  167 |       ctx.clearRect(0, 0, canvas.width, canvas.height);
+> 168 |       ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+      |           ^
+  169 |       if (!results.multiFaceLandmarks?.length) { setFaceDetected(false); return; }
+  170 |
+  171 |       const landmarks: Landmark[] = results.multiFaceLandmarks[0];
+
+Next.js version: 16.2.4 (Turbopack)
+
     canvas.height = video.videoHeight;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
