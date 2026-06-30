@@ -492,6 +492,15 @@ export default function HistoryPage() {
           </div>
         </div>
 
+        {/* ── STRESS DISTRIBUTION CHART ── */}
+        {pointsWithData.length > 0 && (
+          <StressDistributionChart
+            points={pointsWithData}
+            avgStress={avgStress}
+            period={period}
+          />
+        )}
+
         {/* ── SESSION BREAKDOWN ── */}
         <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
@@ -551,6 +560,191 @@ export default function HistoryPage() {
           )}
         </div>
 
+      </div>
+    </div>
+  );
+}
+
+// ── Stress Distribution Chart ─────────────────────────────────────────────
+function StressDistributionChart({
+  points,
+  avgStress,
+  period,
+}: {
+  points: DataPoint[];
+  avgStress: number | null;
+  period: 'day' | 'week' | 'month' | 'year';
+}) {
+  const total     = points.length;
+  const optimal   = points.filter(p => p.level === 'normal').length;
+  const moderate  = points.filter(p => p.level === 'warning').length;
+  const critical  = points.filter(p => p.level === 'critical').length;
+
+  const pctOptimal  = total ? Math.round((optimal  / total) * 100) : 0;
+  const pctModerate = total ? Math.round((moderate / total) * 100) : 0;
+  const pctCritical = total ? Math.round((critical / total) * 100) : 0;
+
+  // SVG Donut
+  const cx = 80; const cy = 80; const r = 60; const stroke = 22;
+  const circ = 2 * Math.PI * r;
+
+  // Segments: optimal (emerald), moderate (amber), critical (red)
+  const segs = [
+    { pct: pctOptimal,  color: '#10b981', label: 'Óptimo',   bg: 'bg-emerald-500' },
+    { pct: pctModerate, color: '#f59e0b', label: 'Moderado', bg: 'bg-amber-400'   },
+    { pct: pctCritical, color: '#ef4444', label: 'Crítico',  bg: 'bg-red-500'     },
+  ];
+
+  let cumulativePct = 0;
+  const segments = segs.map(seg => {
+    const dashArray  = (seg.pct / 100) * circ;
+    const dashOffset = circ - cumulativePct * circ / 100;
+    cumulativePct += seg.pct;
+    return { ...seg, dashArray, dashOffset };
+  });
+
+  // Gauge arc for avg stress (180° half-circle)
+  const gaugeStress = avgStress ?? 0;
+  const gaugeColor =
+    gaugeStress >= 65 ? '#ef4444' :
+    gaugeStress >= 40 ? '#f59e0b' : '#10b981';
+  const gaugeAngle = (gaugeStress / 100) * 180; // 0–180°
+  const gaugeRad = (gaugeAngle - 90) * (Math.PI / 180);
+  const gaugeR = 52;
+  const needleX = 80 + gaugeR * Math.cos(gaugeRad);
+  const needleY = 80 + gaugeR * Math.sin(gaugeRad);
+
+  const periodLabel =
+    period === 'day' ? 'del día' :
+    period === 'week' ? 'de la semana' :
+    period === 'month' ? 'del mes' : 'del año';
+
+  return (
+    <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
+      <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-[#0a1628]">Distribución de Estrés</h2>
+          <p className="text-xs text-gray-400 font-medium mt-0.5">Desglose de niveles {periodLabel}</p>
+        </div>
+        <div
+          className={cn(
+            'text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border',
+            (avgStress ?? 0) >= 65
+              ? 'bg-red-50 text-red-600 border-red-200'
+              : (avgStress ?? 0) >= 40
+                ? 'bg-amber-50 text-amber-600 border-amber-200'
+                : 'bg-emerald-50 text-emerald-600 border-emerald-200',
+          )}
+        >
+          {(avgStress ?? 0) >= 65 ? '⚠ Nivel Crítico' : (avgStress ?? 0) >= 40 ? '◈ Nivel Moderado' : '✓ Nivel Óptimo'}
+        </div>
+      </div>
+
+      <div className="p-5 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+
+        {/* ── Left: Donut Chart ── */}
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative">
+            <svg width="160" height="160" viewBox="0 0 160 160">
+              {/* Track */}
+              <circle
+                cx={cx} cy={cy} r={r}
+                fill="none" stroke="#f3f4f6" strokeWidth={stroke}
+              />
+              {/* Segments */}
+              {segments.map((seg, i) =>
+                seg.pct > 0 ? (
+                  <circle
+                    key={i}
+                    cx={cx} cy={cy} r={r}
+                    fill="none"
+                    stroke={seg.color}
+                    strokeWidth={stroke}
+                    strokeDasharray={`${seg.dashArray} ${circ}`}
+                    strokeDashoffset={seg.dashOffset}
+                    strokeLinecap="butt"
+                    transform="rotate(-90, 80, 80)"
+                    style={{ transition: 'stroke-dasharray 0.8s ease' }}
+                  />
+                ) : null
+              )}
+              {/* Center label */}
+              <text x={cx} y={cy - 6} textAnchor="middle" className="" style={{ fontSize: 28, fontWeight: 900, fill: '#0a1628' }}>
+                {avgStress !== null ? `${avgStress}` : '—'}
+              </text>
+              <text x={cx} y={cy + 12} textAnchor="middle" style={{ fontSize: 10, fontWeight: 700, fill: '#9ca3af', letterSpacing: 1 }}>
+                % ESTRÉS
+              </text>
+            </svg>
+          </div>
+
+          {/* Legend pills */}
+          <div className="flex flex-wrap justify-center gap-3">
+            {segments.map((seg, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${seg.bg} shadow-sm`} />
+                <span className="text-xs font-bold text-gray-500">
+                  {seg.label}
+                  <span className="ml-1 text-gray-400 font-normal">{seg.pct}%</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Right: Stats + Gauge ── */}
+        <div className="flex flex-col gap-5">
+
+          {/* Radial gauge */}
+          <div className="bg-gray-50/80 rounded-2xl p-5 flex flex-col items-center gap-1">
+            <p className="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-2">Índice de Estrés Promedio</p>
+            <svg width="160" height="90" viewBox="0 0 160 90">
+              {/* Background arc */}
+              <path
+                d="M 15 80 A 65 65 0 0 1 145 80"
+                fill="none" stroke="#e5e7eb" strokeWidth="14" strokeLinecap="round"
+              />
+              {/* Colored arc */}
+              <path
+                d="M 15 80 A 65 65 0 0 1 145 80"
+                fill="none"
+                stroke={gaugeColor}
+                strokeWidth="14"
+                strokeLinecap="round"
+                strokeDasharray={`${(gaugeStress / 100) * 204} 204`}
+                style={{ filter: `drop-shadow(0 0 6px ${gaugeColor}60)`, transition: 'stroke-dasharray 1s ease' }}
+              />
+              {/* Needle */}
+              <line
+                x1="80" y1="80"
+                x2={needleX.toFixed(1)} y2={needleY.toFixed(1)}
+                stroke="#0a1628" strokeWidth="2.5" strokeLinecap="round"
+              />
+              <circle cx="80" cy="80" r="5" fill="#0a1628" />
+              {/* Labels */}
+              <text x="14" y="96" style={{ fontSize: 9, fill: '#9ca3af', fontWeight: 700 }}>0</text>
+              <text x="74" y="20" style={{ fontSize: 9, fill: '#9ca3af', fontWeight: 700 }}>50</text>
+              <text x="140" y="96" style={{ fontSize: 9, fill: '#9ca3af', fontWeight: 700 }}>100</text>
+            </svg>
+            <p className="text-3xl font-black" style={{ color: gaugeColor }}>
+              {avgStress !== null ? `${avgStress}%` : '—'}
+            </p>
+          </div>
+
+          {/* Counts breakdown */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Óptimo',   count: optimal,  color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+              { label: 'Moderado', count: moderate, color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-200'   },
+              { label: 'Crítico',  count: critical,  color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200'     },
+            ].map(({ label, count, color, bg, border }) => (
+              <div key={label} className={`${bg} ${border} border rounded-2xl p-3 text-center`}>
+                <p className={`text-2xl font-black ${color}`}>{count}</p>
+                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
