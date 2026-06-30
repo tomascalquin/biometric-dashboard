@@ -589,10 +589,22 @@ export default function MonitorPage() {
             </div>
             <div className="lg:col-span-2 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <MetricBox label="Parpadeos/min" value={isRunning ? bpm : 0} unit="bpm" highlight={fatigueLevel === "critical" && isRunning} warn={fatigueLevel === "warning" && isRunning} />
-                <MetricBox label="Estado" value={isRunning ? fatigueBadge[fatigueLevel].label : "-"} isText highlight={fatigueLevel === "critical" && isRunning} warn={fatigueLevel === "warning" && isRunning} />
-                <MetricBox label="Duración" value={isRunning ? `${sessionMin} min` : "-"} isText />
-                <MetricBox label="EAR" value={isRunning ? ((earLeft + earRight) / 2).toFixed(3) : "-"} isText={!isRunning} warn={isRunning && ((earLeft + earRight) / 2) < adaptiveThreshold.current && ((earLeft + earRight) / 2) > 0} />
+                <MetricBox label="Tasa de Parpadeo" value={isRunning ? bpm : 0} unit="bpm" highlight={fatigueLevel === "critical" && isRunning} warn={fatigueLevel === "warning" && isRunning} />
+                <MetricBox 
+                  label="Carga Cognitiva" 
+                  value={isRunning ? (fatigueLevel === 'normal' ? 'Baja (Óptima)' : fatigueLevel === 'warning' ? 'Moderada' : 'Alta (Crítica)') : "-"} 
+                  isText 
+                  highlight={fatigueLevel === "critical" && isRunning} 
+                  warn={fatigueLevel === "warning" && isRunning} 
+                />
+                <MetricBox 
+                  label="Apertura Ocular" 
+                  value={isRunning ? `${Math.min(100, Math.max(0, Math.round((((earLeft + earRight) / 2) / (adaptiveThreshold.current || 0.25)) * 90)))}%` : "-"} 
+                  isText={false} 
+                  unit="en vivo"
+                  highlight={isRunning && ((earLeft + earRight) / 2) < adaptiveThreshold.current && ((earLeft + earRight) / 2) > 0} 
+                />
+                <MetricBox label="Tiempo de Monitoreo" value={isRunning ? `${sessionMin} min` : "-"} isText />
               </div>
               {!isRunning ? (
                 <button id="btn-start-monitor" onClick={startMonitor} disabled={isLoading} className="w-full py-4 rounded-2xl bg-[#003087] hover:bg-[#002070] disabled:opacity-50 text-white font-bold text-sm flex items-center justify-center gap-2.5">
