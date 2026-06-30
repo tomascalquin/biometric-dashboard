@@ -36,18 +36,25 @@ function computeEAR(landmarks: Landmark[], indices: number[]): number {
   return (vertical1 + vertical2) / (2.0 * horizontal);
 }
 
-// ClasificaciÃ³n multi-seÃ±al: BPM + EAR promedio + microsueÃ±os
+// Clasificación multi-señal: BPM + EAR promedio + microsueños
 function classifyFatigue(
   bpm: number,
   avgEAR: number,
   adaptiveThreshold: number,
   microsleepCount: number,
+  elapsedSeconds: number
 ): FatigueLevel {
-  if (microsleepCount > 0) return 'critical'; // microsueÃ±o = crÃ­tico
+  if (microsleepCount > 0) return 'critical'; // microsueño = crítico
   if (avgEAR > 0 && avgEAR < adaptiveThreshold * 0.65) return 'critical'; // ojo muy cerrado
-  if (bpm > 0 && bpm < BPM_CRITICAL_THRESHOLD) return 'critical'; // BPM muy bajo
   if (avgEAR > 0 && avgEAR < adaptiveThreshold * 0.80) return 'warning';  // ojo moderadamente cerrado
-  if (bpm > 0 && bpm < BPM_WARNING_THRESHOLD) return 'warning';  // BPM bajo
+  
+  // Para evaluar la tasa de parpadeo (BPM), damos 20 segundos de gracia al iniciar 
+  // la cámara para que junte datos reales sin disparar falsas alarmas de inmediato.
+  if (elapsedSeconds > 20) {
+    if (bpm < BPM_CRITICAL_THRESHOLD) return 'critical'; // Incluye el 0 absoluto (staring extremo)
+    if (bpm < BPM_WARNING_THRESHOLD) return 'warning';
+  }
+  
   return 'normal';
 }
 
@@ -101,9 +108,10 @@ export default function MonitorPage() {
 
   const supabase = createClient();
 
-  // â”€â”€ career_id real del perfil del usuario â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── career_id real del perfil del usuario ──────────────────────────────
   const careerIdRef = useRef<string | null>(null);
   const dbSessionId = useRef<string | null>(null);   // UUID de study_sessions en DB
+  const sessionStartTime = useRef<number>(0);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -235,7 +243,8 @@ export default function MonitorPage() {
       }
 
       const currentBpm = computeBPM();
-      const level = classifyFatigue(currentBpm, avgEAR, threshold, microsleepCount.current);
+      const elapsedSeconds = (Date.now() - sessionStartTime.current) / 1000;
+      const level = classifyFatigue(currentBpm, avgEAR, threshold, microsleepCount.current, elapsedSeconds);
       const blueLight = level === 'critical' || level === 'warning';
 
       setBpm(currentBpm);
@@ -334,6 +343,7 @@ export default function MonitorPage() {
       await camera.start();
       setIsRunning(true);
       lastLogTime.current = Date.now(); // <-- EVITA LOG INMEDIATO
+      sessionStartTime.current = Date.now(); // <-- MARCA EL INICIO REAL DE LA SESIÓN
     } catch (err: any) {
       setError(
         err.name === 'NotAllowedError'
