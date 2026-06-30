@@ -113,7 +113,7 @@ export function StudentDashboard({
               <div className="space-y-4">
                 {[
                   { step: '1', icon: '📷', title: 'Activa la cámara', desc: 'Pulsa el botón azul de arriba' },
-                  { step: '2', icon: '👁️', title: 'Estudia normalmente', desc: 'La IA analiza tu EAR en tiempo real' },
+                  { step: '2', icon: '👁️', title: 'Estudia normalmente', desc: 'El sistema analiza tu EAR en tiempo real' },
                   { step: '3', icon: '📊', title: 'Revisa tu fatiga', desc: 'Te alertaremos si el desgaste es crítico' },
                 ].map(({ step, icon, title, desc }) => (
                   <div key={step} className="flex items-start gap-3 group">
@@ -190,7 +190,7 @@ export function StudentDashboard({
                     </div>
                     <h2 className="text-white text-2xl lg:text-4xl font-black mb-3 tracking-tight">Activa tu Monitor Biométrico</h2>
                     <p className="text-blue-200 text-sm lg:text-base max-w-md leading-relaxed font-medium mx-auto">
-                      Aún no tenemos datos de tu fatiga cognitiva. Para comenzar, inicia una sesión de estudio y deja que la IA mida tu desgaste visual en tiempo real.
+                      Aún no tenemos datos de tu fatiga cognitiva. Para comenzar, inicia una sesión de estudio y deja que el sistema mida tu desgaste visual en tiempo real.
                     </p>
                   </div>
                 </div>
@@ -198,7 +198,7 @@ export function StudentDashboard({
                 <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {[
                     { step: '1', icon: '📷', title: 'Inicia el monitor', desc: 'Haz clic en el botón azul para encender la cámara.' },
-                    { step: '2', icon: '👁️', title: 'Estudia normalmente', desc: 'Nuestra IA analizará la apertura de tus ojos (EAR).' },
+                    { step: '2', icon: '👁️', title: 'Estudia normalmente', desc: 'El sistema analizará la apertura de tus ojos (EAR).' },
                     { step: '3', icon: '📊', title: 'Revisa tu fatiga', desc: 'Te alertaremos si detectamos niveles críticos.' },
                   ].map(({ step, icon, title, desc }) => (
                     <div key={title} className="text-center p-4 relative group hover:bg-[#f8fafd] rounded-2xl transition-colors">
