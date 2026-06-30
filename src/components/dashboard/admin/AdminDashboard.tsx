@@ -119,7 +119,7 @@ export async function AdminDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <QuickAccessLink href="/dashboard/heatmap"  icon={Map}           label="Mapa en vivo" />
               <QuickAccessLink href="/dashboard/alerts"   icon={AlertTriangle} label="Triage Alertas" />
-              <QuickAccessLink href="/dashboard/history"  icon={FileText}      label="Reportes IA" />
+              <QuickAccessLink href="/dashboard/history"  icon={FileText}      label="Reportes" />
               <QuickAccessLink href="/dashboard/team"     icon={Users}         label="Staff" />
             </div>
           </section>

@@ -518,7 +518,7 @@ export default function MonitorPage() {
       setBpm(Math.max(0, noise.bpm));
 
       // Actualizar fatiga basada en BPM interpolado (suave, no saltos)
-      const level = classifyFatigue(interpolated.bpm, interpolated.earL, adaptiveThreshold.current, 0);
+      const level = classifyFatigue(interpolated.bpm, interpolated.earL, adaptiveThreshold.current, 0, elapsed / 1000);
       setFatigueLevel(level);
       // Filtro azul SOLO en crÃ­tico, NO en warning
       setBlueLightActive(level === 'critical');
