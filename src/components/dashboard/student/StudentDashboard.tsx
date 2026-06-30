@@ -48,7 +48,7 @@ export function StudentDashboard({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10 pb-28 lg:pb-10">
 
         {/* DESKTOP: 2 columnas — MOBILE: 1 columna */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10 animate-slide-up-fade" style={{ animationDelay: '100ms' }}>
 
           {/* ── COLUMNA IZQUIERDA (1/3): Estado + CTA ── */}
           <div className="space-y-5">
@@ -75,58 +75,59 @@ export function StudentDashboard({
               href="/dashboard/monitor"
               id="btn-iniciar-monitor"
               className={cn(
-                'flex items-center justify-between w-full rounded-2xl px-5 py-5 shadow-lg transition-all active:scale-[0.98] group',
+                'animate-shine relative overflow-hidden flex items-center justify-between w-full rounded-[2rem] px-5 py-6 lg:p-7 shadow-2xl transition-all duration-300 active:scale-[0.98] group',
                 isActive
-                  ? 'bg-emerald-500 shadow-emerald-500/30 hover:bg-emerald-600'
-                  : 'bg-[#003087] shadow-[#003087]/30 hover:bg-[#002070]'
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-emerald-500/30 hover:shadow-emerald-500/50'
+                  : 'bg-gradient-to-br from-[#003087] to-[#001b4c] shadow-[#003087]/40 hover:-translate-y-1 hover:shadow-[#003087]/60'
               )}
             >
-              <div className="flex items-center gap-4">
+              <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay pointer-events-none"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
+
+              <div className="flex items-center gap-4 relative z-10">
                 <div className={cn(
-                  'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0',
-                  isActive ? 'bg-white/20' : 'bg-white/15'
+                  'w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-inner',
+                  isActive ? 'bg-white/20' : 'bg-white/10 backdrop-blur-md border border-white/10'
                 )}>
-                  <Camera className="w-6 h-6 text-white" />
+                  <Camera className="w-7 h-7 text-white group-hover:scale-110 transition-transform" />
                 </div>
                 <div>
-                  <p className="text-base font-black text-white leading-tight">
-                    {isActive ? 'Ver monitor activo' : 'Activar cámara biométrica'}
+                  <p className="text-lg lg:text-xl font-black text-white leading-tight mb-1">
+                    {isActive ? 'Monitor activo' : 'Iniciar Monitoreo'}
                   </p>
-                  <p className="text-xs text-white/70 mt-0.5">
-                    {isActive ? 'Grabando en tiempo real…' : 'Detecta fatiga · 1 clic para comenzar'}
+                  <p className="text-xs text-blue-100/80 font-medium">
+                    {isActive ? 'Grabando en tiempo real…' : 'Protege tu rendimiento en 1 clic'}
                   </p>
                 </div>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-                <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-0.5 transition-transform" />
+              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 border border-white/10 relative z-10 group-hover:bg-white/20 transition-colors">
+                <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
 
-            {/* Guía de uso — solo si no tiene datos */}
-            {!hasData && (
-              <div className="bg-white rounded-2xl border border-[#e2e8f4] shadow-sm p-5">
-                <p className="text-[10px] font-black text-[#7a8fb0] uppercase tracking-widest mb-4">
-                  Cómo funciona en 3 pasos
-                </p>
-                <div className="space-y-4">
-                  {[
-                    { step: '1', icon: '📷', title: 'Activa la cámara', desc: 'Pulsa el botón azul de arriba' },
-                    { step: '2', icon: '👁️', title: 'Estudia normalmente', desc: 'Mantén la cara frente a la pantalla' },
-                    { step: '3', icon: '📊', title: 'Recibe tus métricas', desc: 'La IA detecta tu fatiga en tiempo real' },
-                  ].map(({ step, icon, title, desc }) => (
-                    <div key={step} className="flex items-start gap-3">
-                      <div className="w-7 h-7 rounded-xl bg-[#003087] flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <span className="text-[11px] font-black text-white">{step}</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-[#0a1628]">{icon} {title}</p>
-                        <p className="text-xs text-[#7a8fb0] mt-0.5">{desc}</p>
-                      </div>
+            {/* Guía de uso siempre visible para la demo */}
+            <div className="bg-white rounded-2xl border border-[#e2e8f4] shadow-sm p-5">
+              <p className="text-[10px] font-black text-[#7a8fb0] uppercase tracking-widest mb-4">
+                Cómo funciona en 3 pasos
+              </p>
+              <div className="space-y-4">
+                {[
+                  { step: '1', icon: '📷', title: 'Activa la cámara', desc: 'Pulsa el botón azul de arriba' },
+                  { step: '2', icon: '👁️', title: 'Estudia normalmente', desc: 'La IA analiza tu EAR en tiempo real' },
+                  { step: '3', icon: '📊', title: 'Revisa tu fatiga', desc: 'Te alertaremos si el desgaste es crítico' },
+                ].map(({ step, icon, title, desc }) => (
+                  <div key={step} className="flex items-start gap-3 group">
+                    <div className="w-7 h-7 rounded-xl bg-[#003087] group-hover:bg-[#0066cc] flex items-center justify-center flex-shrink-0 shadow-sm transition-colors">
+                      <span className="text-[11px] font-black text-white">{step}</span>
                     </div>
-                  ))}
-                </div>
+                    <div>
+                      <p className="text-sm font-bold text-[#0a1628]">{icon} {title}</p>
+                      <p className="text-xs text-[#7a8fb0] mt-0.5">{desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
 
             {/* Recomendación contextual */}
             <div className="bg-[#e8f0fb] rounded-2xl p-4 border border-[#cddaf5] flex gap-3">
@@ -178,33 +179,33 @@ export function StudentDashboard({
             {!hasData ? (
               <div className="bg-white rounded-3xl border border-[#e2e8f4] shadow-sm overflow-hidden">
                 {/* Banner hero */}
-                <div className="bg-gradient-to-br from-[#003087] to-[#0055cc] p-10 lg:p-16 flex flex-col items-center justify-center text-center relative overflow-hidden">
-                  <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-4 right-4 w-40 h-40 rounded-full border-2 border-white" />
-                    <div className="absolute bottom-4 left-4 w-24 h-24 rounded-full border-2 border-white" />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full border border-white" />
-                  </div>
-                  <div className="relative z-10">
-                    <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-2xl">
-                      <Brain className="w-10 h-10 text-white" />
+                <div className="bg-gradient-to-br from-[#003087] to-[#001b4c] p-10 lg:p-16 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-float"></div>
+                  <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl animate-float-delay"></div>
+                  
+                  <div className="relative z-10 animate-slide-up-fade" style={{ animationDelay: '200ms' }}>
+                    <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 flex items-center justify-center mx-auto mb-6 shadow-2xl hover:scale-105 transition-transform">
+                      <Camera className="w-10 h-10 text-white" />
                     </div>
-                    <h2 className="text-white text-2xl lg:text-3xl font-black mb-2">Sistema Biométrico UAI</h2>
-                    <p className="text-blue-200 text-sm lg:text-base max-w-md leading-relaxed">
-                      Monitorea tu fatiga cognitiva en tiempo real usando reconocimiento facial avanzado y análisis de parpadeo EAR.
+                    <h2 className="text-white text-2xl lg:text-4xl font-black mb-3 tracking-tight">Activa tu Monitor Biométrico</h2>
+                    <p className="text-blue-200 text-sm lg:text-base max-w-md leading-relaxed font-medium mx-auto">
+                      Aún no tenemos datos de tu fatiga cognitiva. Para comenzar, inicia una sesión de estudio y deja que la IA mida tu desgaste visual en tiempo real.
                     </p>
                   </div>
                 </div>
-                {/* Características */}
+                {/* Instrucciones Claras */}
                 <div className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {[
-                    { icon: '⚡', title: 'Tiempo real', desc: 'Detección instantánea de microsueños y fatiga aguda' },
-                    { icon: '🔒', title: 'Anónimo', desc: 'Solo se procesan puntos faciales, no se graba video' },
-                    { icon: '📈', title: 'Historial', desc: 'Evolución de tus métricas a lo largo del semestre' },
-                  ].map(({ icon, title, desc }) => (
-                    <div key={title} className="text-center p-4">
-                      <div className="text-3xl mb-2">{icon}</div>
-                      <p className="text-sm font-bold text-[#0a1628] mb-1">{title}</p>
-                      <p className="text-xs text-[#7a8fb0] leading-relaxed">{desc}</p>
+                    { step: '1', icon: '📷', title: 'Inicia el monitor', desc: 'Haz clic en el botón azul para encender la cámara.' },
+                    { step: '2', icon: '👁️', title: 'Estudia normalmente', desc: 'Nuestra IA analizará la apertura de tus ojos (EAR).' },
+                    { step: '3', icon: '📊', title: 'Revisa tu fatiga', desc: 'Te alertaremos si detectamos niveles críticos.' },
+                  ].map(({ step, icon, title, desc }) => (
+                    <div key={title} className="text-center p-4 relative group hover:bg-[#f8fafd] rounded-2xl transition-colors">
+                      <div className="absolute top-0 right-1/2 translate-x-1/2 text-5xl opacity-5 font-black text-[#003087] group-hover:scale-110 transition-transform">{step}</div>
+                      <div className="text-3xl mb-2 relative z-10">{icon}</div>
+                      <p className="text-sm font-bold text-[#0a1628] mb-1 relative z-10">{title}</p>
+                      <p className="text-xs text-[#7a8fb0] leading-relaxed relative z-10">{desc}</p>
                     </div>
                   ))}
                 </div>
@@ -227,7 +228,7 @@ export function StudentDashboard({
                   </h2>
 
                   {/* KPI cards — 2×2 en mobile, 4 en línea en desktop */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 animate-slide-up-fade" style={{ animationDelay: '300ms' }}>
 
                     {/* Parpadeos */}
                     <div className="bg-white rounded-2xl p-5 border border-[#e2e8f4] shadow-sm hover:shadow-md transition-shadow">
