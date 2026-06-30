@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -547,7 +547,7 @@ export default function MonitorPage() {
   const fatigueBadge: Record<FatigueLevel, { label: string; cls: string; dot: string }> = {
     normal: { label: 'Normal', cls: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
     warning: { label: 'Fatiga Moderada', cls: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
-    critical: { label: 'Fatiga CrÃ­tica', cls: 'bg-red-100 text-red-700', dot: 'bg-red-500' },
+    critical: { label: 'Fatiga Crítica', cls: 'bg-red-100 text-red-700', dot: 'bg-red-500' },
   };
 
   // Camera phase:
@@ -571,27 +571,27 @@ export default function MonitorPage() {
       <div className="min-h-screen bg-[#f8fafc] pb-28 lg:pb-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
           <div className="mb-6">
-            <h1 className="text-xl lg:text-2xl font-black text-[#0a1628] tracking-tight">Monitor Biometrico</h1>
+            <h1 className="text-xl lg:text-2xl font-black text-[#0a1628] tracking-tight">Monitor Biométrico</h1>
             <p className="text-sm text-[#7a8fb0] mt-0.5">
-              {cameraPhase === "idle" ? "Listo para iniciar" : cameraPhase === "loading" ? "Cargando..." : cameraPhase === "calibrating" ? "Calibrando..." : `Sesion activa - ${sessionMin} min`}
+              {cameraPhase === "idle" ? "Listo para iniciar" : cameraPhase === "loading" ? "Cargando..." : cameraPhase === "calibrating" ? "Calibrando..." : `Sesión activa - ${sessionMin} min`}
             </p>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
             <div className="lg:col-span-3 space-y-4">
               <div className="relative rounded-2xl overflow-hidden bg-[#0a1628] w-full aspect-[4/3] flex items-center justify-center shadow-xl ring-1 ring-white/5">
-                {cameraPhase === "idle" && (<div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-white"><div className="w-20 h-20 rounded-3xl bg-white/10 border border-white/10 flex items-center justify-center"><span className="text-4xl">ojos</span></div><p className="text-sm font-bold text-white">Monitor biometrico</p></div>)}
+                {cameraPhase === "idle" && (<div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-white"><div className="w-20 h-20 rounded-3xl bg-white/10 border border-white/10 flex items-center justify-center"><span className="text-4xl">👁️</span></div><p className="text-sm font-bold text-white">Monitor biométrico</p></div>)}
                 {cameraPhase === "loading" && (<div className="absolute inset-0 flex items-center justify-center bg-[#0a1628] z-10"><div className="w-14 h-14 border-2 border-t-blue-400 rounded-full animate-spin" /></div>)}
                 <video ref={videoRef} className={`w-full h-full object-cover ${!isRunning ? "opacity-0 absolute" : ""}`} playsInline muted />
                 <canvas ref={canvasRef} className={`absolute inset-0 w-full h-full ${!isRunning ? "opacity-0" : ""}`} />
                 {cameraPhase === "running" && (<div className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-bold z-20 ${fatigueBadge[fatigueLevel].cls}`}>{fatigueBadge[fatigueLevel].label}</div>)}
               </div>
-              {cameraPhase === "running" && calibDone && !demoRunning && (<div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 flex items-center gap-2.5"><span>ok</span><p className="text-xs font-bold text-emerald-700">Midiendo en tiempo real</p></div>)}
+              {cameraPhase === "running" && calibDone && !demoRunning && (<div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 flex items-center gap-2.5"><span>✅</span><p className="text-xs font-bold text-emerald-700">Midiendo en tiempo real</p></div>)}
             </div>
             <div className="lg:col-span-2 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <MetricBox label="Parpadeos/min" value={isRunning ? bpm : 0} unit="bpm" highlight={fatigueLevel === "critical" && isRunning} warn={fatigueLevel === "warning" && isRunning} />
                 <MetricBox label="Estado" value={isRunning ? fatigueBadge[fatigueLevel].label : "-"} isText highlight={fatigueLevel === "critical" && isRunning} warn={fatigueLevel === "warning" && isRunning} />
-                <MetricBox label="Duracion" value={isRunning ? `${sessionMin} min` : "-"} isText />
+                <MetricBox label="Duración" value={isRunning ? `${sessionMin} min` : "-"} isText />
                 <MetricBox label="EAR" value={isRunning ? ((earLeft + earRight) / 2).toFixed(3) : "-"} isText={!isRunning} warn={isRunning && ((earLeft + earRight) / 2) < adaptiveThreshold.current && ((earLeft + earRight) / 2) > 0} />
               </div>
               {!isRunning ? (
